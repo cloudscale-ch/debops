@@ -135,6 +135,19 @@
   notify: [ 'Apply ifupdown configuration' ]
   when: (item.item.key | d() and item is changed)
 
+- name: Mark interface configurations to be preserved
+  copy:
+    content: |
+      {% for file in ifupdown__foreign_config %}
+      protect {{ file }}
+      {% endfor %}
+    dest: '/run/network/debops-ifupdown-reconfigure-foreign-config'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  # This does not actually change anything on the system
+  changed_when: False
+
 - name: Remove custom configuration files
   ansible.builtin.file:
     path:  '{{ item.dest | d(item.path) }}'
