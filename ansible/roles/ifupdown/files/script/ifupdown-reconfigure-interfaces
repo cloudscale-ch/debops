@@ -323,7 +323,7 @@ if [ -d "${interface_request_path}" ] ; then
 
         # Apply new interface configuration
         log_message -m "Synchronizing /etc/network/interfaces.d/ configuration"
-        rsync -a --delete /etc/network/interfaces.config.d/ /etc/network/interfaces.d
+        rsync -a --delete --filter 'merge /run/network/debops-ifupdown-reconfigure-foreign-config' /etc/network/interfaces.config.d/ /etc/network/interfaces.d
 
         # This is usually used the first time the network interfaces are reconfigured
         if containsElement "${interface_reconfigure_all}" "${changed_interface_names[@]}" ; then

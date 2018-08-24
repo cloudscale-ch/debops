@@ -114,7 +114,17 @@ ifupdown__reconfigure_init_file: '/etc/network/interfaces.d/old-interfaces'
 # outgoing IPv4 address. This can be changed on the interface level as well.
 ifupdown__default_nat_masquerade: False
                                                                    # ]]]
-                                                                   # ]]]
+
+# .. envvar:: ifupdown__foreign_config [[[
+#
+# List of files in :file:`/etc/network/interfaces.d` which will not be overwritten
+# or deleted. This is meant to preserve network configurations created by other
+# tools.
+#
+ifupdown__foreign_config: []
+
+
+# ]]]
 # Default network interface layout [[[
 # ------------------------------------
 
