@@ -16,7 +16,7 @@
 # .. envvar:: ifupdown__base_packages [[[
 #
 # List of base APT packages to install.
-ifupdown__base_packages: [ 'resolvconf', 'rdnssd', 'bsdutils', 'rsync' ]
+ifupdown__base_packages: [ 'ifupdown', 'resolvconf', 'rdnssd', 'bsdutils', 'rsync' ]
 
                                                                    # ]]]
 # .. envvar:: ifupdown__dynamic_packages [[[
