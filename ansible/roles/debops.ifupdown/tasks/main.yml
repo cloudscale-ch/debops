@@ -9,6 +9,17 @@
     - '{{ ifupdown__dynamic_packages }}'
     - '{{ ifupdown__packages }}'
 
+- name: Find netplan configuration
+  find:
+    path: '/etc/netplan'
+  register: netplan_config
+
+- name: Remove netplan configuration
+  file:
+    path: '{{ item.path }}'
+    state: 'absent'
+  with_items: '{{ netplan_config.files }}'
+
 - name: Create custom ifupdown systemd services
   include: ifup_systemd.yml
 
