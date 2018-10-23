@@ -11,16 +11,14 @@
   roles:
 
     - role: debops.apt_preferences
-      tags: [ 'role::apt_preferences' ]
+      tags: [ 'role::apt_preferences', 'skip::apt_preferences' ]
       apt_preferences__dependent_list:
         - '{{ lxc__apt_preferences__dependent_list }}'
 
     - role: debops.ferm
-      tags: [ 'role::ferm' ]
-      ferm__forward: '{{ lxc__ferm__forward|bool }}'
-      ferm__forward_accept: '{{ lxc__ferm__forward|bool }}'
+      tags: [ 'role::ferm', 'skip::ferm' ]
       ferm__dependent_rules:
         - '{{ lxc__ferm__dependent_rules }}'
 
     - role: debops.lxc
-      tags: [ 'role::lxc' ]
+      tags: [ 'role::lxc', 'skip::lxc' ]
