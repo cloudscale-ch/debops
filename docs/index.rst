@@ -17,7 +17,7 @@ DebOps
    :target: https://gitlab.com/debops/debops/pipelines
 
 .. |CII Best Practices| image:: https://bestpractices.coreinfrastructure.org/projects/237/badge
-   :target: https://bestpractices.coreinfrastructure.org/projects/237
+   :target: https://bestpractices.coreinfrastructure.org/en/projects/237
 
 .. include:: includes/global.rst
 
@@ -50,13 +50,13 @@ Some of the applications and services supported in DebOps are:
 .. __: https://www.letsencrypt.org/
 .. __: https://about.gitlab.com/
 .. __: https://www.librenms.org/
-.. __: https://www.nextcloud.com/
-.. __: https://www.owncloud.org/
+.. __: https://nextcloud.com/
+.. __: https://owncloud.org/
 
 You can :ref:`try out DebOps <quick_start>` without installing it on your
 computer, using Docker or Vagrant. Alternatively, a set of scripts can be
 installed on your own computer, that will let you manage multiple, separate IT
-infrastructue environments.
+infrastructure environments.
 
 .. note::
 
@@ -75,6 +75,7 @@ infrastructue environments.
 
    overview
    introduction/quick-start
+   introduction/getting-started
    introduction/faq
    introduction/community
    introduction/philosophy
@@ -114,6 +115,7 @@ infrastructue environments.
    admin-guide/dev-network.rst
    admin-guide/basic-virtualization.rst
    admin-guide/basic-mailserver.rst
+   admin-guide/debops-oid-registry.rst
 
 .. toctree::
    :caption: Developer Guide
@@ -162,7 +164,6 @@ infrastructue environments.
    debops-tools/index
    debops-playbooks/index
    debops-policy/index
-   philosophy
 
 ..
  Local Variables:

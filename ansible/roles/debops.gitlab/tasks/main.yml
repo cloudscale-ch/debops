@@ -1,14 +1,13 @@
 ---
 
 - name: Install required packages
-  apt:
-    name: '{{ item }}'
-    state: 'latest'
-    install_recommends: False
-  with_flattened:
-    - '{{ gitlab__base_packages }}'
-    - '{{ gitlab__release_packages[gitlab__distribution_release] | d([]) }}'
-    - '{{ gitlab__database_packages[gitlab__distribution_release][gitlab__database] | d([]) }}'
+  package:
+    name: '{{ q("flattened", (gitlab__base_packages
+                              + (gitlab__release_packages[gitlab__distribution_release] | d([]))
+                              + (gitlab__database_packages[gitlab__distribution_release][gitlab__database] | d([])))) }}'
+    state: 'present'
+  register: gitlab__register_packages
+  until: gitlab__register_packages is succeeded
 
 - name: Create GitLab system group
   group:
@@ -45,6 +44,14 @@
     state: 'present'
   when: gitlab_support_filesystem_acl|bool
 
+- name: Allow GitLab user to the ~/.ssh directory
+  file:
+    path: '{{ gitlab_home + "/.ssh" }}'
+    state: 'directory'
+    owner: '{{ gitlab_user }}'
+    group: '{{ gitlab_group }}'
+    mode: '0700'
+
 - name: Configure ~/.gitconfig
   template:
     src: 'var/local/git/gitconfig.j2'
@@ -56,7 +63,8 @@
 - include: download_gitlab_ce.yml
 
 - name: Check GitLab version numbers
-  script: 'script/gitlab-version{{ "2" if (ansible_python_version is version_compare("3.5", "<")) else "3" }} {{ gitlab_ce_git_checkout }}'
+  script: 'script/gitlab-version{{ "2" if (ansible_python_version is version_compare("3.5", "<")) else "3" }}
+           {{ gitlab_ce_git_checkout }}'
   register: gitlab__register_version
   changed_when: False
   check_mode: False

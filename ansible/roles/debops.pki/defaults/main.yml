@@ -7,7 +7,7 @@
 # .. contents:: Sections
 #    :local:
 #
-# .. include:: ../../../includes/global.rst
+# .. include:: ../../../../includes/global.rst
 
 
 # Global PKI configuration [[[
@@ -528,6 +528,15 @@ pki_default_authority: 'domain'
 # Specify if the ``nameConstraints`` CA certificate extension should be
 # included in the generated CA certificates by default.
 pki_ca_name_constraints: True
+
+                                                                   # ]]]
+# .. envvar:: pki_ca_name_constraints_critical [[[
+#
+# Specify if the ``nameConstraints`` CA certificate extension should be
+# marked critical by default. Enabling this when using ``nameConstraints`` is
+# recommended by the CA/Browser Forum.
+# Ref: https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-1.6.4.pdf
+pki_ca_name_constraints_critical: True
 
                                                                    # ]]]
 # .. envvar:: pki_ca_domain [[[

@@ -7,40 +7,28 @@
   changed_when: False
   check_mode: False
 
-- name: Get upstream APT GPG key
-  apt_key:
-    id: '{{ mosquitto__upstream_key_id | replace(" ","") }}'
-    keyserver: '{{ ansible_local.core.keyserver
-                   if (ansible_local|d() and ansible_local.core|d() and
-                       ansible_local.core.keyserver)
-                   else "hkp://pool.sks-keyservers.net" }}'
-    state: 'present'
-  when: mosquitto__upstream|bool and ansible_distribution in [ 'Debian' ]
-
-- name: Configure upstream APT repository
-  apt_repository:
-    repo: '{{ mosquitto__upstream_repository[ansible_distribution] }}'
-    state: 'present'
-    update_cache: True
-  when: mosquitto__upstream|bool
-
 - name: Install required packages
   package:
-    name: '{{ item }}'
+    name: '{{ q("flattened", (mosquitto__base_packages
+                              + mosquitto__packages)) }}'
     state: 'present'
-  with_flattened:
-    - '{{ mosquitto__base_packages }}'
-    - '{{ mosquitto__packages }}'
+  register: mosquitto__register_packages
+  until: mosquitto__register_packages is succeeded
 
 - name: Install required Python modules
   pip:
     name: '{{ item }}'
     state: 'present'
   with_items: '{{ mosquitto__pip_packages }}'
+  register: mosquitto__register_pip_install
+  until: mosquitto__register_pip_install is succeeded
   when: mosquitto__pip_packages|d()
 
 - name: Check the installed Mosquitto version
-  shell: mosquitto -h | head -n 1 | awk '{print $3}'
+  shell: set -o nounset -o pipefail -o errexit &&
+         mosquitto -h | head -n 1 | awk '{print $3}' || true
+  args:
+    executable: 'bash'
   register: mosquitto__register_version
   changed_when: False
   check_mode: False
@@ -97,7 +85,8 @@
 
 - name: Create user/password entries
   environment:
-    MOSQUITTO_PASSWORD: '{{ item.password | d(lookup("password", mosquitto__password_secret_path + "/" + item.name | d(item))) }}'
+    MOSQUITTO_PASSWORD: '{{ item.password
+                            | d(lookup("password", mosquitto__password_secret_path + "/" + item.name | d(item))) }}'
   command: 'mosquitto_passwd -b {{ mosquitto__password_file }} {{ item.name | d(item) }} ${MOSQUITTO_PASSWORD}'
   with_flattened:
     - '{{ mosquitto__auth_users }}'

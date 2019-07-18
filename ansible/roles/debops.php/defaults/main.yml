@@ -7,7 +7,7 @@
 # .. contents:: Sections
 #    :local:
 #
-# .. include:: ../../../includes/global.rst
+# .. include:: ../../../../includes/global.rst
 
 
 # Custom APT package repositories [[[
@@ -16,8 +16,8 @@
 # .. envvar:: php__version_preference [[[
 #
 # List of APT package names which are scanned to check available PHP versions.
-# The first found package wins.
-php__version_preference: [ 'php7.2', 'php7.1', 'php7.0', 'php5' ]
+# The first found package wins. The ``php5`` packages are not supported.
+php__version_preference: [ 'php', 'php5.6' ]
 
                                                                    # ]]]
 # .. envvar:: php__sury [[[
@@ -28,7 +28,10 @@ php__version_preference: [ 'php7.2', 'php7.1', 'php7.0', 'php5' ]
 php__sury: '{{ (ansible_local.php.sury
                 if (ansible_local|d() and ansible_local.php|d() and
                     ansible_local.php.sury|d())
-                else False) | bool }}'
+                 else (True
+                       if (ansible_distribution_release in
+                           [ "jessie", "stretch", "trusty", "xenial" ])
+                       else False)) | bool }}'
 
                                                                    # ]]]
 # .. envvar:: php__sury_apt_key_id [[[
@@ -50,8 +53,20 @@ php__sury_apt_repo: '{{ php__sury_apt_repo_map[ansible_distribution] }}'
 # YAML dictionary map of OpenPGP key ids used to sign APT repository information,
 # dependent on the OS distribution.
 php__sury_apt_key_id_map:
-  'Debian': 'DF3D585DB8F0EB658690A554AC0E47584A7A714D'
-  'Ubuntu': '14AA40EC0831756756D7F66C4F4EA0AAE5267A6C'
+  'Debian':
+    - id: '1505 8500 A023 5D97 F5D1  0063 B188 E2B6 95BD 4743'
+      repo: 'deb https://packages.sury.org/php/ {{ ansible_distribution_release }} main'
+      state: '{{ "present" if php__sury|bool else "absent" }}'
+
+    # Key replaced due to security concerns
+    # Ref: https://www.patreon.com/posts/dpa-new-signing-25451165
+    - id: 'DF3D 585D B8F0 EB65 8690  A554 AC0E 4758 4A7A 714D'
+      state: 'absent'
+
+  'Ubuntu':
+    - id: '14AA 40EC 0831 7567 56D7  F66C 4F4E A0AA E526 7A6C'
+      repo: 'ppa:ondrej/php'
+      state: '{{ "present" if php__sury|bool else "absent" }}'
 
                                                                    # ]]]
 # .. envvar:: php__sury_apt_repo_map [[[
@@ -89,6 +104,7 @@ php__base_packages:
   - '{{ "php" + php__version }}'
   - 'curl'
   - 'gd'
+  - '{{ [] if php__composer_upstream_enabled|bool else "composer" }}'
   - '{{ "mcrypt"
         if (php__version is version_compare("7.2","<"))
         else [] }}'
@@ -215,6 +231,48 @@ php__common_included_packages:
   - 'sysvmsg'
   - 'tokenizer'
   - 'zlib'
+                                                                   # ]]]
+                                                                   # ]]]
+# PHP Composer support [[[
+# ------------------------
+
+# .. envvar:: php__composer_upstream_enabled [[[
+#
+# Enable or disable installation of the :command:`composer` command from
+# upstream. The ``composer`` package in older OS releases might not work as
+# expected. If upstream installation is disabled, the ``composer`` APT package
+# will be installed instead.
+php__composer_upstream_enabled: '{{ True
+                                    if (ansible_distribution_release in
+                                        [ "wheezy", "jessie", "stretch",
+                                          "precise", "trusty", "xenial", "bionic" ])
+                                    else False }}'
+
+                                                                   # ]]]
+# .. envvar:: php__composer_upstream_version [[[
+#
+# The version of the PHP Composer release to install from upstream.
+# Remember to update the watch file and the SHA256 checksum on changes.
+php__composer_upstream_version: '1.8.5'
+
+                                                                   # ]]]
+# .. envvar:: php__composer_upstream_checksum [[[
+#
+# The SHA256 checksum of the PHP Composer release selected for installation.
+php__composer_upstream_checksum: 'sha256:23b29b1a921b56db3c12ba531752dffcfaa3de0fcece3e54974e06990e46bbf9'
+
+                                                                   # ]]]
+# .. envvar:: php__composer_upstream_url [[[
+#
+# The URL to the PHP Composer binary which should be installed.
+php__composer_upstream_url: '{{ "https://github.com/composer/composer/releases/download/"
+                                + php__composer_upstream_version + "/composer.phar" }}'
+
+                                                                   # ]]]
+# .. envvar:: php__composer_upstream_dest [[[
+#
+# The absolute path of the PHP Composer binary destination file.
+php__composer_upstream_dest: '/usr/local/bin/composer'
                                                                    # ]]]
                                                                    # ]]]
 # Global php.ini configuration [[[
@@ -686,13 +744,23 @@ php__apt_preferences__dependent_list:
     suffix: '_packages_sury_org'
     state: '{{ "present" if php__sury|bool else "absent" }}'
 
-  - packages: [ 'php5', 'php5-*', 'php7.0', 'php7.0-*', 'dh-php', 'php-*' ]
+  - packages: [ 'php', 'php5', 'php5*', 'php7*', 'dh-php', 'php-*',
+                'libpcre2-8-0', 'libpcre3', 'libzip4', 'libpcre16-3',
+                'libpcre32-3', 'libpcrecpp0v5', 'libpcre3-dev' ]
     pin: 'origin "packages.sury.org"'
     priority: '500'
     reason: 'Prefer PHP packages from the same repository for consistency'
     role: 'debops.php'
     suffix: '_packages_sury_org'
     state: '{{ "present" if php__sury|bool else "absent" }}'
+
+                                                                   # ]]]
+# .. envvar:: php__keyring__dependent_apt_keys [[[
+#
+# Configuration for the :ref:`debops.keyring` Ansible role.
+php__keyring__dependent_apt_keys:
+
+  - '{{ php__sury_apt_key_id }}'
 
                                                                    # ]]]
 # .. envvar:: php__logrotate__dependent_config [[[

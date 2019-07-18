@@ -1,7 +1,7 @@
 # DebOps Makefile
 
 .PHONY: all
-all:
+all: help
 
 .PHONY: help
 help:
@@ -16,6 +16,14 @@ check: fail-if-git-dirty
 clean:          ## Clean up project directory
 clean: clean-tests clean-sdist clean-wheel
 
+.PHONY: collection
+collection:     ## Build collection of Ansible artifacts with Mazer
+collection: make-collection
+
+.PHONY: versions
+versions:       ## Check versions of upstream software
+versions: check-versions
+
 .PHONY: docker
 docker:         ## Check Docker image build
 docker: test-docker-build
@@ -23,6 +31,10 @@ docker: test-docker-build
 .PHONY: docs
 docs:           ## Build Sphinx documentation
 docs: test-docs
+
+.PHONY: links
+links:          ## Check external links in documentation
+links: check-links
 
 .PHONY: pep8
 pep8:           ## Test Python PEP8 compliance
@@ -35,6 +47,10 @@ shell: test-shell
 .PHONY: syntax
 syntax:         ## Check Ansible playbook syntax
 syntax: test-playbook-syntax
+
+.PHONY: lint
+lint:           ## Check Ansible roles using ansible-lint
+lint: test-ansible-lint
 
 .PHONY: test
 test:           ## Perform all DebOps tests
@@ -57,6 +73,10 @@ sdist-quiet: clean-sdist
 sdist-sign:     ## Create signed Python sdist package
 sdist-sign: sdist
 	@gpg --detach-sign --armor dist/debops-*.tar.gz
+
+.PHONY: make-collection
+make-collection:
+	@lib/mazer/make-collection
 
 .PHONY: clean-sdist
 clean-sdist:
@@ -85,7 +105,7 @@ twine-upload:    ## Upload Python packages to PyPI
 	@twine upload dist/*
 
 .PHONY: test-all
-test-all: clean-tests test-pep8 test-debops-tools test-docs test-playbook-syntax test-yaml test-shell test-docker-build
+test-all: clean-tests test-pep8 test-debops-tools test-debops-ansible_plugins test-docs test-playbook-syntax test-yaml test-ansible-lint test-shell test-docker-build
 
 .PHONY: test-pep8
 test-pep8:
@@ -104,12 +124,21 @@ test-docker-build:
 
 .PHONY: clean-tests
 clean-tests:
-	@rm -vrf .coverage docs/_build/* docs/ansible/roles/*/defaults.rst
+	@rm -vrf .coverage docs/_build/* docs/ansible/roles/*/defaults.rst docs/ansible/roles/*/defaults
+
+.PHONY: check-versions
+check-versions:
+	@./lib/tests/check-watch
 
 .PHONY: test-docs
 test-docs:
 	@printf "%s\n" "Testing HTML documentation generation..."
 	@cd docs && sphinx-build -n -W -b html -d _build/doctrees . _build/html
+
+.PHONY: check-links
+check-links:
+	@printf "%s\n" "Checking external links in documentation..."
+	@cd docs && sphinx-build -n -b linkcheck -d _build/doctrees . _build/linkcheck
 
 .PHONY: test-playbook-syntax
 test-playbook-syntax:
@@ -117,6 +146,11 @@ test-playbook-syntax:
 	@ANSIBLE_ROLES_PATH="ansible/roles" ansible-playbook --syntax-check \
 		ansible/playbooks/bootstrap.yml \
 		ansible/playbooks/site.yml
+
+.PHONY: test-ansible-lint
+test-ansible-lint:
+	@printf "%s\n" "Checking Ansible roles using ansible-lint..."
+	@ansible-lint roles/* roles/*/env roles/*/raw ansible/playbooks/*.yml ansible/playbooks/service/*.yml
 
 .PHONY: test-yaml
 test-yaml:
@@ -127,6 +161,11 @@ test-yaml:
 test-debops-tools:
 	@printf "%s\n" "Testing debops-tools using nose2..."
 	@nose2 --with-coverage
+
+.PHONY: test-debops-ansible_plugins
+test-debops-ansible_plugins:
+	@printf "%s\n" "Testing debops-ansible_plugins using nose2..."
+	@python ansible/roles/debops.ansible_plugins/filter_plugins/debops_filter_plugins.py
 
 .PHONY: fail-if-git-dirty
 fail-if-git-dirty:

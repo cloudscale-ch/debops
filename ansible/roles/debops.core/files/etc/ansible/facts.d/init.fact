@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This file is managed remotely, all changes will be lost
 
@@ -23,4 +23,4 @@ else
     output="sysvinit"
 fi
 
-printf "\"%s\"\n" "${output}"
+printf "\"%s\"\\n" "${output}"

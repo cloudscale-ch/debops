@@ -52,11 +52,20 @@ located in the :file:`ansible/resources/` directory (or wherever the
            └── hostname2/
 
 The ``with_filetree`` Ansible lookup plugin will look for resources to manage
-in specific hostname directory, then a specific group name directory defined by
-the :envvar:`resources__group_name` variable, then in the :file:`by-group/all/`
-directory. The resource found first in this order wins and no further checks
+in specific hostname directory, then of all the groups the current host is in
+(based on the content of the variable `group_names`), then in the :file:`by-group/all/` directory.
+The resource found first in this order wins and no further checks
 are performed; this means that you can put a file in the :file:`by-group/all/`
 directory and then override it using a host-specific directory.
+The groups directories are read in the order dictated by Ansible during inventory parsing.
+
+See `Ansible - Playbooks Variables`__ to learn about the ``group_names`` variable, and `Ansible - Working with Inventory`__
+
+.. __: https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#accessing-information-about-other-hosts-with-magic-variables
+.. __: https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html#how-variables-are-merged
+
+for more information on how to use ``ansible_group_priority`` to change the merge order
+for groups of the same level (after the parent/child order is resolved).
 
 Each directory structure starts at the root of the filesystem (:file:`/`), so
 to create a file in a subdirectory you need to recreate the entire path. For
@@ -71,11 +80,6 @@ In the templates, you can reference variables from the Ansible facts (including
 local facts managed by other roles) and Ansible inventory. Referencing
 variables from other roles might work only if these roles are included in the
 playbook, however that is not idempotent and should be avoided.
-
-To manage resources on a group level, you need to define the
-:envvar:`resources__group_name` variable in the inventory group that contains
-the directory name in the :file:`ansible/resources/template/by-group/`
-directory. Only one group level is supported.
 
 .. _resources__ref_paths:
 
@@ -95,6 +99,9 @@ details for certain parameters:
 ``item.state``
   Optional. Specify state of the given path. If not specified, the element is
   treated as a directory which will be created if it doesn't exist.
+
+``item.acl``
+  Optional. Please take a look :ref:`resources__ref_acl` section.
 
 Examples
 ~~~~~~~~
@@ -166,6 +173,9 @@ parameters:
   permissions allow. You can create or change directory permissions as needed
   using the :ref:`resources__ref_paths` variables.
 
+``item.acl``
+  Optional. Please take a look :ref:`resources__ref_acl` section.
+
 Examples
 ~~~~~~~~
 
@@ -176,6 +186,21 @@ Clone the Ansible repository to the host:
    resources__repositories:
      - repo: 'https://github.com/ansible/ansible'
        dest: '/usr/local/src/github.com/ansible/ansible'
+
+Clone a private repository, accessible using a SSH key. The UNIX account
+specified as the owner, or ``root`` account when otherwise, needs to have the
+SSH key accepted by the repository. This example uses `Gitea`__ instance as the
+source of the :command:`git` repository:
+
+.. __: https://gitea.io/
+
+.. code-block:: yaml
+
+   resources__repositories:
+     - repo: 'ssh://git@git.example.org:29418/namespace/repository.git'
+       owner: 'username'
+       dest: '~username/src/git.example.org/namespace/repository'
+       accept_hostkey: True
 
 
 .. _resources__ref_urls:
@@ -200,6 +225,9 @@ Here are some important parameters used by the role:
 
 ``item.dest`` or ``item.name`` or ``item.path``
   Required. Path where downloaded resource should be stored.
+
+``item.acl``
+  Optional. Please take a look :ref:`resources__ref_acl` section.
 
 Examples
 ~~~~~~~~
@@ -232,6 +260,9 @@ Here are some more important parameters:
 
 ``item.dest`` or ``item.name`` or ``item.path``
   Required. Path on the remote host where the archive should be unpacked.
+
+``item.acl``
+  Optional. Please take a look :ref:`resources__ref_acl` section.
 
 Examples
 ~~~~~~~~
@@ -279,6 +310,9 @@ Here are some more important parameters:
   Optional. If not specified, or if specified and ``present``, the file(s) will
   be created. If specified and ``absent``, file will be removed.
 
+``item.acl``
+  Optional. Please take a look :ref:`resources__ref_acl` section.
+
 Examples
 ~~~~~~~~
 
@@ -301,3 +335,169 @@ Create a custom :program:`cron` task that restarts a service daily:
          #!/bin/sh
          # {{ ansible_managed }}
          test -x /usr/bin/service && systemctl restart service
+
+.. _resources__ref_acl:
+
+ACL support
+-----------
+
+Some of :ref:`debops.resources` variables also have the possibility to manage
+the ACLs (:ref:`resources__ref_paths`, :ref:`resources__ref_repositories`,
+:ref:`resources__ref_urls`, :ref:`resources__ref_archives` and
+:ref:`resources__ref_files`).
+
+Examples
+~~~~~~~~
+
+Create a directory on all hosts and allow ``adm`` group to access to any
+new content:
+
+.. code-block:: yaml
+
+   resources__paths:
+     - dest: '/tmp/dir1'
+       acl:
+         - default: True
+           etype: 'group'
+           entity: 'adm'
+           permissions: 'rX'
+         - default: True
+           etype: 'user'
+           entity: 'joe'
+           permissions: 'rX'
+
+Remove ACLs related to ``joe`` user on a file on all hosts:
+
+.. code-block:: yaml
+
+   resources__files:
+     - dest: '/tmp/file'
+       state: 'present'
+       acl:
+         - etype: 'user'
+           entity: 'joe'
+           state: 'absent'
+
+Parameters related to ACL
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``item.acl``
+  Optional. Configure filesystem ACL entries of the current file or directory.
+  This parameter is a list of YAML dictionaries. See the documentation of the
+  `Ansible acl module`_ for details about each parameters (what they can be
+  used to and their format) as well as the :man:`acl(5)`, :man:`setfacl(1)`
+  and :man:`getfacl` manual pages. Some useful parameters:
+
+  ``default``
+    Optional, boolean. If ``True``, set a given ACL entry as the default for
+    new files and directories inside a given directory. Only works with
+    directories and can't be removed with ``state`` set to ``absent``.
+
+  ``entity``
+    Name of the UNIX user account or group that a given ACL entry applies to.
+
+  ``etype``
+    Specify the ACL entry type to configure. Valid choices: ``user``,
+    ``group``, ``mask``, ``other``.
+
+  ``permissions``
+    Specify the permission to apply for a given ACL entry. This parameter
+    cannot be specified when the state of an ACL entry is set to ``absent``.
+
+  ``recursive``
+    Apply a given ACL entry recursively to all entities in a given path.
+
+  ``state``
+    Optional. If not specified or ``present``, the ACL entry will be created.
+    If ``absent``, the ACL entry will be removed. The ``query`` state doesn't
+    make sense in this context and shouldn't be used.
+
+
+.. _resources__ref_commands:
+
+resources__commands
+-------------------
+
+The ``resources__*_commands`` variables can be used to define shell commands or
+small scripts which should be executed on the remote hosts. This can be useful
+to, for example, start a :command:`systemd` service created previously using
+the :ref:`resources__ref_files` variables.
+
+This is not a replacement for a fully-fledged Ansible role. The interface is
+extremely limited, and you need to ensure idempotency inside of the script or
+command you are executing. The :ref:`debops.resources` role can be executed at
+different points in the main playbook, which you should also take into account.
+
+Examples
+~~~~~~~~
+
+Set up a simple example :command:`systemd` service and start it:
+
+.. code-block:: yaml
+
+   resources__files:
+     - content: |
+         [Unit]
+         Description=Example Service
+
+         [Service]
+         Type=simple
+         ExecStart=/bin/true
+         RemainAfterExit=yes
+
+         [Install]
+         WantedBy=multi-user.target
+       dest: '/etc/systemd/system/example.service'
+       mode: '0644'
+
+   resources__commands:
+     - name: 'Reload systemd and start example service'
+       shell: |
+         if ! systemctl is-active example.service ; then
+             systemctl daemon-reload
+             systemctl start example.service
+         fi
+
+Syntax
+~~~~~~
+
+Each shell command entry is defined by a YAML dictionary with specific
+parameters:
+
+``name``
+  Required. A name of a given shell command displayed during Ansible execution,
+  not used for anything else in the task. Multiple configuration entries with
+  the same ``name`` parameter are merged together.
+
+``script`` / ``shell`` / ``command``
+  Required. String or YAML text block that contains the command or script to
+  execute on the remote host. The contents will be passed to the ``shell``
+  Ansible module.
+
+``chdir``
+  Optional. Specify the path to the directory on the remote host where the
+  script should be executed.
+
+``creates``
+  Optional. Specify the path of the file on the remote host - if it's present,
+  the ``shell`` module will not execute the script.
+
+``removes``
+  Optional. Specify the path of the file on the remote host - if it's absent,
+  the ``shell`` module will not execute the script.
+
+``executable``
+  Optional. Specify the command interpreter to use. If not specified,
+  ``/bin/bash`` will be used by default.
+
+``state``
+  Optional. If not specified or ``present``, the shell command will be executed
+  as normal by the role. If ``absent``, the shell command will not be executed
+  by the role. If ``ignore``, the configuration entry will not be evaluated by
+  the role during execution. This can be used to conditionally activate and
+  deactivate different shell commands on the Ansible level.
+
+``no_log``
+  Optional, boolean. If ``True``, Ansible will not display the task contents or
+  record them in the log. It's useful to avoid recording sensitive data like
+  passwords.

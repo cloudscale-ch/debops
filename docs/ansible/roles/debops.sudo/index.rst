@@ -12,8 +12,9 @@ package will be installed.
    :maxdepth: 2
 
    getting-started
-   defaults
+   defaults/main
    defaults-detailed
+   ldap-dit
 
 Copyright
 ---------

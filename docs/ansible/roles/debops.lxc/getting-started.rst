@@ -11,11 +11,17 @@ LXC support in DebOps
 This role focuses only on the LXC configuration itself. You will need to use
 other DebOps roles to manage additional required subsystems.
 
+The role will configure an internal ``lxcbr0`` bridge for the local Linux
+Containers, using the ``lxc-net`` service. The internal network will have its
+own DHCP/DNS server with ``lxc.{{ ansible_domain }}`` DNS domain by default.
+You can configure a DNS proxy on the LXC host to be able to access the LXC
+containers by their DNS names instead of their IP addresses.
+
 Additional bridge network interfaces can be maintained using the
 :ref:`debops.ifupdown` role. By default the :command:`ifupdown` role creates
 the ``br0`` network bridge attached to the external network, which is defined
 in the LXC configuration as the default network interface to attach the
-containers.
+containers, if the internal bridge is disabled.
 
 The containers will use DHCP to get their network interface configuration.
 You can use :ref:`debops.dnsmasq` or :ref:`debops.dhcpd` Ansible roles to
@@ -90,6 +96,66 @@ the configuration of each created LXC container in the
 :file:`/var/lib/lxc/<container>/config` configuration file.
 
 
+LXC containers are managed by systemd
+-------------------------------------
+
+The LXC containers created by the role tasks or by the
+:command:`lxc-new-unprivileged` script are managed by :command:`systemd`,
+specifically by the ``lxc@.service`` unit. This is done because on Debian
+Stretch using the :command:`lxc-stop` command directly to stop a container
+results in a timeout and container processes being forcibly killed by the
+system. The :command:`lxc@.service` :command:`systemd` unit is modified by the
+:ref:`debops.lxc` role to shutdown the container "from the inside" via the
+:command:`lxc-attach` command, which results in a properly shut down container.
+
+The containers are configured to not start automatically by the ``lxc.service``
+unit. Instead, each LXC container has its corresponding ``lxc@.service``
+instance that will be started by :command:`systemd` on system boot. On
+container destruction, either by the :ref:`debops.lxc` role or by the
+:command:`lxc-destroy` command, the instance will be disabled automatically.
+
+To start a LXC container using :command:`systemd` instances, you can issue the
+command:
+
+.. code-block:: console
+
+   systemctl start lxc@<container>.service
+
+To stop a running LXC container started by :command:`systemd`, you can execute
+the command:
+
+.. code-block:: console
+
+   systemctl stop lxc@<container>.service
+
+With this setup, you should avoid using the ``lxc-*`` commands that affect the
+containers directly, unless the container started by the :command:`systemd` is
+stopped first. Otherwise the state of the container managed by the
+:command:`systemd` instance might get desynchronized.
+
+References and more details about the issues:
+
+- `Debian Bug #831691: Please use lxc.haltsignal = SIGRTMIN+3 for systemd containers`__
+
+  .. __: https://bugs.debian.org/831691
+
+- `[lxc-users] Graceful Shutdown/Reboot`__
+
+  .. __: https://lists.linuxcontainers.org/pipermail/lxc-users/2017-February/012827.html
+
+- `GitHub issue: Please use lxc.haltsignal = SIGRTMIN+3 for systemd containers`__
+
+  .. __: https://github.com/lxc/lxc/issues/1085
+
+- `GitHub issue: lxc stop does not stop my container`__
+
+  .. __: https://github.com/lxc/lxd/issues/2947
+
+- `Forum post: 'lxc-stop -n <container>' takes too long`__
+
+  .. __: https://forum.turris.cz/t/lxc-stop-n-container-takes-too-long/6358
+
+
 SSH access to containers
 ------------------------
 
@@ -109,6 +175,12 @@ the environment and use that user's :file:`~/.ssh/authorized_keys` file as
 source of SSH public keys. Alternatively, you can specify a custom file with
 authorized SSH keys to add in the container's
 :file:`/root/.ssh/authorized_keys` file.
+
+If :ref:`the LDAP support <debops.ldap>` is configured on a host and SSH key
+lookup in LDAP is enabled by the :ref:`debops.sshd` role, the script will look
+up the current user keys in LDAP directory as well - this ensures that the SSH
+access is configured even when the SSH public keys are not explicitly defined
+in the current user's :file:`~/.ssh/authorized_keys` file.
 
 After that, the LXC container should be ready to be used remotely, at which
 point you can use normal DebOps ``bootstrap`` playbook and other playbooks to
@@ -140,10 +212,7 @@ To enable LXC support on a host, it needs to be added to the
 
    [debops_all_hosts:children]
    lxc_hosts
-   containers
-
-   [debops_service_ifupdown:children]
-   lxc_hosts
+   lxc_containers
 
    [debops_service_lxc:children]
    lxc_hosts
@@ -151,12 +220,13 @@ To enable LXC support on a host, it needs to be added to the
    [lxc_hosts]
    lxc-host    ansible_host=lxc-host.example.org
 
-   [containers]
+   [lxc_containers]
    webserver   ansible_host=webserver.example.org
 
-The LXC host should be configured with bridged networking to allow LXC
-containers to connect to the network. You can use the :ref:`debops.ifupdown`
-Ansible role to configure the network interfaces.
+By default, containers will use the ``lxcbr0`` bridge managed by the role, with
+their own internal subdomain. You can use the :ref:`debops.ifupdown` Ansible
+role to configure additional network bridges on the LXC host, if you want to
+attach the containers to the public network.
 
 
 Remote LXC management without SSH access
@@ -174,10 +244,7 @@ specified in multiple lines for readability):
 
    [debops_all_hosts:children]
    lxc_hosts
-   containers
-
-   [debops_service_ifupdown:children]
-   lxc_hosts
+   lxc_containers
 
    [debops_service_lxc:children]
    lxc_hosts
@@ -185,7 +252,7 @@ specified in multiple lines for readability):
    [lxc_hosts]
    lxc-host    ansible_host=lxc-host.example.org
 
-   [containers]
+   [lxc_containers]
    webserver    ansible_connection=lxc_ssh ansible_user=root
    webserver    ansible_host=lxc-host.example.org
    webserver    ansible_ssh_extra_args=webserver
@@ -222,6 +289,12 @@ Available role tags:
 
 ``role::lxc:containers``
   Execute tasks that manage LXC containers.
+
+``role::lxc:net``
+  Manage internal LXC network configuration.
+
+``role::lxc:dnsmasq``
+  Manage the :command:`dnsmasq` instance of the internal LXC network.
 
 
 Other resources

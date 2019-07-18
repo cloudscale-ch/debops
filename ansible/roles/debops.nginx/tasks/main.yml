@@ -1,5 +1,9 @@
 ---
 
+- name: DebOps pre_tasks hook
+  include: '{{ lookup("task_src", "nginx/pre_main.yml") }}'
+  when: (nginx__deploy_state in [ 'present' ])
+
 - name: Assert that no legacy options are used
   assert:
     that:
@@ -17,46 +21,25 @@
     - '{{ nginx_internal_servers | d([]) }}'
     - '{{ nginx_dependent_servers | d([]) }}'
 
-- name: DebOps pre_tasks hook
-  include: '{{ lookup("task_src", "nginx/pre_main.yml") }}'
-  when: (nginx__deploy_state in [ 'present' ])
-
 - name: Check if nginx is installed
   stat:
     path: '/usr/sbin/nginx'
   register: nginx_register_installed
 
-- name: Add flavor APT GPG key
-  apt_key:
-    id: '{{ nginx__flavor_apt_key_id }}'
-    state: '{{ "present" if (nginx__deploy_state == "present") else "absent" }}'
-    keyserver: '{{ ansible_local.core.keyserver
-                   if (ansible_local|d() and ansible_local.core|d() and
-                       ansible_local.core.keyserver)
-                   else "hkp://pool.sks-keyservers.net" }}'
-  when: (nginx_flavor in [ 'nginx.org', 'passenger' ])
-
-- name: Add flavor APT repository
-  apt_repository:
-    repo: '{{ nginx__flavor_apt_repository }}'
-    state: '{{ "present" if (nginx__deploy_state == "present") else "absent" }}'
-    update_cache: True
-  when: (nginx_flavor in [ 'nginx.org', 'passenger' ])
-
 - name: Ensure base packages are installed
   package:
-    name: '{{ item }}'
+    name: '{{ q("flattened", nginx_base_packages) }}'
     state: 'present'
   when: (nginx__deploy_state in [ 'present' ])
-  with_flattened:
-    - '{{ nginx_base_packages }}'
+  register: nginx__register_packages_present
+  until: nginx__register_packages_present is succeeded
 
 - name: Ensure Nginx packages are in their desired state
   package:
-    name: '{{ item }}'
+    name: '{{ q("flattened", nginx__flavor_packages) }}'
     state: '{{ "present" if (nginx__deploy_state == "present") else "absent" }}'
-  with_flattened:
-    - '{{ nginx__flavor_packages }}'
+  register: nginx__register_packages_flavor
+  until: nginx__register_packages_flavor is succeeded
 
 - name: Create default nginx directories
   file:
@@ -86,12 +69,13 @@
   service:
     name: 'nginx'
     state: 'restarted'
-  when: (nginx_register_installed|d() and not nginx_register_installed.stat.exists and nginx__deploy_state in [ 'present' ])
+  when: (nginx_register_installed|d() and not nginx_register_installed.stat.exists and
+         nginx__deploy_state in [ 'present' ])
 
 - name: Get list of nameservers configured in /etc/resolv.conf
   shell: awk '$1=="nameserver" {if(/%/){sub(/[0-9a-fA-F:]+/, "[&]", $2)}; print $2}' /etc/resolv.conf
   args:
-    executable: '/bin/sh'
+    executable: 'sh'
   register: nginx_register_nameservers
   changed_when: False
   check_mode: False
@@ -130,7 +114,9 @@
     owner: 'root'
     group: 'root'
     mode: '0440'
-  when: (nginx__deploy_state in [ 'present' ])
+  when: (ansible_local|d() and ansible_local.sudo|d() and
+         (ansible_local.sudo.installed|d())|bool and
+         nginx__deploy_state in [ 'present' ])
 
 - name: Divert original /etc/nginx/nginx.conf
   command: dpkg-divert --quiet --local --divert /etc/nginx/nginx.conf.dpkg-divert
@@ -159,14 +145,6 @@
   with_items: [ 'acme-challenge', 'ssl' ]
   when: (nginx__deploy_state in [ 'present' ])
   notify: [ 'Test nginx and reload' ]
-
-  # Remove temporary old files if they are present
-- name: Remove remnants of dpkg-diverted configuration
-  command: rm -f /etc/nginx/fastcgi_params.dpkg-divert /etc/nginx/fastcgi_params.dpkg-divert.lock
-  args:
-    removes: '/etc/nginx/fastcgi_params.dpkg-divert.lock'
-  notify: [ 'Test nginx and reload' ]
-  when: (nginx__deploy_state in [ 'present' ])
 
 - name: Disable default nginx site
   file:
@@ -201,7 +179,7 @@
 - name: Remove all configuration symlinks during config reset
   shell: rm -f /etc/nginx/sites-enabled/*
   args:
-    executable: '/bin/sh'
+    executable: 'sh'
     creates: '/etc/ansible/facts.d/nginx.fact'
     warn: False
   when: (nginx__deploy_state in [ 'present' ])

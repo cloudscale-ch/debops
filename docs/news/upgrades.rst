@@ -11,6 +11,262 @@ perform the upgrades between different stable releases.
 Unreleased
 ----------
 
+GPG key management changes
+--------------------------
+
+The :ref:`debops.keyring` centralizes management of the APT keyring and various
+GPG keyrings in unprivileged UNIX accounts. Various DebOps roles have been
+modified to use this role instead of performing the GPG key management on their
+own. If you use custom Ansible playbooks with these roles, you will need to
+update them to include the :ref:`debops.keyring` role.
+
+List of modified DebOps roles:
+
+- :ref:`debops.ansible`
+- :ref:`debops.cran`
+- :ref:`debops.docker_registry`
+- :ref:`debops.docker_server`
+- :ref:`debops.elastic_co`
+- :ref:`debops.gitlab_runner`
+- :ref:`debops.hashicorp`
+- ``debops.hwraid``
+- :ref:`debops.icinga`
+- :ref:`debops.mariadb`
+- :ref:`debops.mariadb_server`
+- :ref:`debops.mosquitto`
+- :ref:`debops.nginx`
+- :ref:`debops.nodejs`
+- :ref:`debops.owncloud`
+- :ref:`debops.php`
+- :ref:`debops.postgresql`
+- :ref:`debops.postgresql_server`
+- :ref:`debops.rstudio_server`
+- :ref:`debops.salt`
+- :ref:`debops.yadm`
+- ``debops-contrib.bitcoind``
+- ``debops-contrib.neurodebian``
+- ``debops-contrib.x2go_server``
+
+Inventory variable changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The :ref:`debops.rsnapshot` role has been redesigned and all of its
+  ``rsnapshot_*`` variables have been renamed to ``rsnapshot__*`` to contain
+  them in their own namespace. You will have to update your inventory.
+
+  The configuration of the hosts to back up has also been redesigned; the role
+  does not use Ansible inventory groups to define the hosts to back up
+  implicitly; you now have to explicitly specify hosts to back up using the
+  :ref:`rsnapshot__ref_hosts` variables. There is a way to replocate the
+  previous usage of inventory groups to define hosts to back up as well, see
+  the provided examples.
+
+- The ``debops.docker`` role has been renamed to :ref:`debops.docker_server`.
+  The ``docker__*`` variables have been renamed to ``docker_server__*``. You
+  will have to update your inventory variables and move all hosts to the new
+  inventory group ``[debops_service_docker_server]`` to continue using this
+  role.
+
+- The :ref:`debops.lxc` role uses different names of the container
+  configuration options depending on the LXC version used on the host. The
+  ``name`` parameters used in the configuration might change unexpectedly
+  between LXC versions, which might lead to wrong configuration entries being
+  merged and broken LXC configuration.
+
+  If you have configured :ref:`lxc__ref_configuration` variables in the Ansible
+  inventory, review them before applying the role configuration on LXC hosts.
+  You can check the :envvar:`lxc__default_configuration` variable to see which
+  ``name`` parameters can change.
+
+- The :ref:`debops.ipxe` role default variables have been renamed to move them
+  to their own ``ipxe__*`` namespace; you will have to update the Ansible
+  inventory.
+
+- The ``core__keyserver`` variable and its corresponding local fact have been
+  replaced by the :envvar:`keyring__keyserver` with a corresponding local fact.
+
+
+v1.0.0 (2019-05-22)
+-------------------
+
+Redesigned OpenLDAP support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The :ref:`debops.slapd` role has been redesigned from the ground up,
+  everything is new. Existing OpenLDAP servers/clusters will break if the new
+  role is applied on them, don't do it. Set up a new OpenLDAP server/cluster
+  and import the LDAP directory afterwards. See the role documentation for more
+  details.
+
+Changes to the UNIX group and account management
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The :ref:`debops.users` Ansible role has been modernized and it now uses the
+  custom Ansible filter plugins included in DebOps to manage the UNIX groups
+  and accounts. The group and account management now uses the same merged list
+  of entries, which means that two new parameters have been added to control
+  when groups or accounts are created/removed. You might need to update your
+  inventory configuration if you use the role to create UNIX groups without
+  corresponding accounts, or you put UNIX accounts in shared primary groups.
+
+  By default, :ref:`debops.users` will create user private groups if
+  ``item.group`` parameter is not specified; if you want to add accounts to the
+  ``users`` primary group, you need to specify it explicitly.
+
+  The ``user`` parameter can be used to disable the account management, so that
+  only UNIX group is created. The ``private_group`` parameter controls the
+  management of the UNIX group for a given configuration entry. See the role
+  documentation for more details.
+
+- The ``users__default_system`` variable has been removed from the
+  :ref:`debops.users` role. The UNIX groups and accounts created by the role on
+  hosts with the LDAP support will be normal accounts, not "system" accounts,
+  and will use UID/GID >= 1000. This can be controlled per-user/per-group using
+  the ``item.system`` parameter.
+
+- The ``item.createhome`` parameter has been renamed to ``item.create_home`` in
+  accordance with the renamed parameter of the ``user`` Ansible module.
+
+- The ``users__resources``, ``users__group_resources`` and
+  ``users__host_resources`` variables have been removed. Their functionality
+  has been reimplemented as the ``item.resources`` parameter of the
+  ``users__*_accounts`` variables. See the role documentation for more details.
+
+- The management of the admin accounts has been removed from the
+  :ref:`debops.users` role and is now done in the :ref:`debops.system_users`
+  role. See the :envvar:`system_users__default_accounts` for a list of the
+  default admin accounts created on the remote hosts.
+
+Inventory variable changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The :ref:`debops.phpipam` has been refactored. Now the variables have been
+  renamed from ``phpipam_*`` to ``phpipam__*``
+
+- The :ref:`debops.auth` default variables related to LDAP client configuration
+  have been removed; the functionality is now managed by the
+  :ref:`debops.ldap`, :ref:`debops.nslcd` and :ref:`debops.nsswitch` Ansible
+  roles. The table below shows the old variable names and their new
+  equivalents:
+
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | Old variable name                                | New variable name                | Changed value                                    |
+  +==================================================+==================================+==================================================+
+  | ``auth_ldap_conf``                               | :envvar:`ldap__enabled`          | ``False`` by default                             |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_ldap_conf_domain``                        | :envvar:`ldap__domain`           | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_ldap_conf_hostdn``                        | Removed                          | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_ldap_conf_uri``                           | :envvar:`ldap__servers_uri`      | Based on DNS SRV records                         |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_ldap_conf_tls_cacert``                    | Removed                          | In :envvar:`ldap__default_configuration`         |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_ldap_conf_tls_reqcert``                   | Removed                          | In :envvar:`ldap__default_configuration`         |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_ldap_conf_options``                       | Removed                          | In :envvar:`ldap__default_configuration`         |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nsswitch``                                | Removed                          | Replaced by :ref:`debops.nsswitch`               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_conf``                              | Removed                          | Replaced by :ref:`debops.nslcd`                  |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_domain``                            | Removed                          | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_ldap_server``                       | Removed                          | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_uri``                               | Removed                          | In :envvar:`nslcd__default_configuration`        |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_base``                              | :envvar:`nslcd__ldap_base_dn`    | Based on :ref:`debops.ldap` facts                |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_tls_reqcert``                       | Removed                          | In :envvar:`nslcd__default_configuration`        |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_tls_cacertfile``                    | Removed                          | In :envvar:`nslcd__default_configuration`        |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_bind_host_basedn``                  | :envvar:`nslcd__ldap_device_dn`  | Based on :ref:`debops.ldap` facts                |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_bind_host_cn``                      | :envvar:`nslcd__ldap_self_rdn`   | Yes, different attribute, different value source |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_bind_host_dn``                      | :envvar:`nslcd__ldap_binddn`     | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_bind_host_basepw``                  | :envvar:`nslcd__ldap_bindpw`     | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_bind_host_password``                | Removed                          | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_bind_host_hash``                    | Removed                          | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_password_length``                   | Removed                          | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_options``                           | Removed                          | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_nss_min_uid``                       | Removed                          | In :envvar:`nslcd__default_configuration`        |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_pam_mkhomedir_umask``                     | :envvar:`nslcd__mkhomedir_umask` | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_pam_authz_search``                  | Removed                          | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_pam_authz_search_host``             | Removed                          | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_pam_authz_search_service``          | Removed                          | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+  | ``auth_nslcd_pam_authz_search_host_and_service`` | Removed                          | No                                               |
+  +--------------------------------------------------+----------------------------------+--------------------------------------------------+
+
+- The :envvar:`sshd__default_allow_groups` default variable has been changed to
+  an empty list. The group-based access control has been moved to a PAM access
+  control rules defined in the :envvar:`sshd__pam_access__dependent_rules`
+  variable.
+
+  Access to the OpenSSH service by the ``admins``, ``sshusers`` and
+  ``sftponly`` UNIX groups members should work the same as before. Access to
+  the ``root`` account has been limited to hosts in the same DNS domain. UNIX
+  accounts not in the aforementioned UNIX groups can access the OpenSSH service
+  from hosts in the same DNS domain (other restrictions like public key
+  presence still apply). See :ref:`debops.pam_access` documentation for more
+  details about defining the PAM access rules.
+
+- The default variables in the :ref:`debops.sshd` role related to LDAP support
+  have been modified:
+
+  +---------------------------------------------+--------------------------------+--------------------------------------------------+
+  | Old variable name                           | New variable name              | Changed value                                    |
+  +=============================================+================================+==================================================+
+  | :envvar:`sshd__authorized_keys_lookup`      | Not modified                   | Based on :ref:`debops.ldap` facts                |
+  +---------------------------------------------+--------------------------------+--------------------------------------------------+
+  | :envvar:`sshd__authorized_keys_lookup_user` | Not modified                   | Yes, to ``sshd``                                 |
+  +---------------------------------------------+--------------------------------+--------------------------------------------------+
+  | ``sshd__authorized_keys_lookup_group``      | Removed                        | No                                               |
+  +---------------------------------------------+--------------------------------+--------------------------------------------------+
+  | ``sshd__authorized_keys_lookup_home``       | Removed                        | No                                               |
+  +---------------------------------------------+--------------------------------+--------------------------------------------------+
+  | :envvar:`sshd__authorized_keys_lookup_type` | Not modified                   | Yes, ``sss`` included by default                 |
+  +---------------------------------------------+--------------------------------+--------------------------------------------------+
+  | ``sshd__ldap_domain``                       | Removed                        | No                                               |
+  +---------------------------------------------+--------------------------------+--------------------------------------------------+
+  | ``sshd__ldap_base``                         | :envvar:`sshd__ldap_base_dn`   | Based on :ref:`debops.ldap` facts                |
+  +---------------------------------------------+--------------------------------+--------------------------------------------------+
+  | ``sshd__ldap_bind_basedn``                  | :envvar:`sshd__ldap_device_dn` | Based on :ref:`debops.ldap` facts                |
+  +---------------------------------------------+--------------------------------+--------------------------------------------------+
+  | ``sshd__ldap_bind_cn``                      | :envvar:`sshd__ldap_self_rdn`  | Yes, different attribute, different value source |
+  +---------------------------------------------+--------------------------------+--------------------------------------------------+
+  | ``sshd__ldap_bind_dn``                      | :envvar:`sshd__ldap_binddn`    | Yes                                              |
+  +---------------------------------------------+--------------------------------+--------------------------------------------------+
+  | ``sshd__ldap_bind_bind_pw``                 | :envvar:`sshd__ldap_bindpw`    | Yes, different password path                     |
+  +---------------------------------------------+--------------------------------+--------------------------------------------------+
+  | ``sshd__ldap_bind_basepw``                  | Removed                        | No                                               |
+  +---------------------------------------------+--------------------------------+--------------------------------------------------+
+  | ``sshd__ldap_password_length``              | Removed                        | No                                               |
+  +---------------------------------------------+--------------------------------+--------------------------------------------------+
+
+- The management of the ``root`` account dotfiles has been removed from the
+  :ref:`debops.users` role and is now included in the
+  :ref:`debops.root_account` role. The dotfiles are managed using
+  :command:`yadm` script, installed by the :ref:`debops.yadm` role. The
+  ``users__root_accounts`` list has been removed.
+
+
+v0.8.1 (2019-02-02)
+-------------------
+
 Subordinate UID/GID ranges for root
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -68,12 +324,40 @@ Changes related to packet forwarding in firewall and sysctl
   :ref:`debops.ifupdown` role and their removal shouldn't impact connectivity,
   however you should check the modifications to the firewall just in case.
 
-Inventory variable changes
+Redesigned DNSmasq support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- The :envvar:`bootstrap__etc_hosts` value has been changed from a boolean to
-  trinary ``present``/``absent``/``ignore`` to allow conditional removal of
-  :file:`/etc/hosts` entries, with ``present`` being the default.
+- The :ref:`debops.dnsmasq` role has been redesigned from the ground up. The
+  configuration is now merged from multiple sources (role defaults, Ansible
+  inventory), role defines separate subdomains for each of the network
+  interfaces, and automatically enables support for local Consul DNS service or
+  LXC subdomain if they are detected on the host.
+
+- Most of the ``dnsmasq__*`` default variables that defined the
+  :command:`dnsmasq` configuration have been removed. Their functionality is
+  exposed either as parameters of network interface configuration, or can be
+  easily changed via the main configuration pipeline. See the documentation of
+  :ref:`dnsmasq__ref_configuration` or :ref:`dnsmasq__ref_interfaces` for more
+  details. If you use DNSmasq on a host managed by DebOps, you will have to
+  modify your Ansible inventory.
+
+- The generated :command:`dnsmasq` configuration has been split from a single
+  ``00_main.conf`` configuration file into multiple separate files stored in
+  the :file:`/etc/dnsmasq.d/` directory. The old ``00_main.conf`` configuration
+  file will be automatically removed if found, to avoid issues with duplicated
+  configuration options.
+
+- The role provides an easy to use way to define DHCP clients with IP address
+  reservation, as well as DNS resource records. See
+  :ref:`dnsmasq__ref_dhcp_dns_entries` documentation for examples and more
+  details.
+
+- The configuration of TCP Wrappers for the TFTP service has been removed from
+  the :ref:`debops.dnsmasq` role, and is now done via the
+  :ref:`debops.tcpwrappers` Ansible role and its dependent variables.
+
+Inventory variable changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - The :ref:`debops.grub` role was redesigned, most of the ``grub_*`` default
   variables have been removed and the new configuration method has been
@@ -103,6 +387,75 @@ Inventory variable changes
 
   You can use the :ref:`debops.ifupdown` role to configure packet forwarding
   per network interface, in the firewall as well as via the kernel parameters.
+
+- Host and domain management has been removed from the ``debops.bootstrap``
+  role. This functionality is now done via the :ref:`debops.netbase` role,
+  included in the bootstrap playbook. Some of the old variables have their new
+  equivalents:
+
+  +-----------------------------------------------+--------------------------------------------+---------------+
+  | Old variable name                             | New variable name                          | Changed value |
+  +===============================================+============================================+===============+
+  | ``bootstrap__hostname_domain_config_enabled`` | :envvar:`netbase__hostname_config_enabled` | No            |
+  +-----------------------------------------------+--------------------------------------------+---------------+
+  | ``bootstrap__hostname``                       | :envvar:`netbase__hostname`                | No            |
+  +-----------------------------------------------+--------------------------------------------+---------------+
+  | ``bootstrap__domain``                         | :envvar:`netbase__domain`                  | No            |
+  +-----------------------------------------------+--------------------------------------------+---------------+
+  | ``bootstrap__etc_hosts``                      | Removed                                    | No            |
+  +-----------------------------------------------+--------------------------------------------+---------------+
+  | ``bootstrap__hostname_v6_loopback``           | Removed                                    | No            |
+  +-----------------------------------------------+--------------------------------------------+---------------+
+
+  Support for configuring IPv6 loopback address has been removed entirely. This
+  was required when some of the DebOps roles relied on the ``ansible_fqdn``
+  value for task delegation between hosts. Since then, task delegation has been
+  updated to use the ``inventory_hostname`` values and ensuring that the IPv6
+  loopback address resolves to a FQDN address of the host is no longer
+  required.
+
+- The ``netbase__*_hosts`` variables in the :ref:`debops.netbase` role have
+  been redesigned to use YAML lists instead of dictionaries. See
+  :ref:`netbase__ref_hosts` for more details.
+
+- The ``resources__group_name`` variable has been removed in favor of using
+  all the groups the current hosts is in. This change has been reflected in the
+  updated variable :envvar:`resources__group_templates`.
+  If you need to use a specific group update the :envvar:`resources__group_templates`
+  accordingly.
+  Read the documentation about :ref:`resources__ref_templates` for more details on
+  templating with `debops.resources`.
+
+Changes related to LXC containers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The :ref:`debops.lxc` role will configure new LXC containers to attach to the
+  ``lxcbr0`` bridge by default. Existing LXC containers will not be modified.
+  You can change the default bridge used on container creation using the
+  :ref:`lxc__ref_configuration` variables.
+
+- The :ref:`debops.lxc` role has been updated to use the :command:`systemd`
+  ``lxc@.service`` instances to manage the containers instead of using the
+  :command:`lxc-*` commands directly. Existing LXC containers should not be
+  affected, but it is recommended to switch them under the :command:`systemd`
+  control. To do that, you should disable the container autostart in the
+  :file:`/var/lib/lxc/<container>/config` configuration files:
+
+  .. code-block:: none
+
+     lxc.start.auto = 0
+
+  This will make sure that the containers are not started by the
+  ``lxc.service`` service on boot. Next, after stopping the running containers,
+  enable and start the containers via the :command:`systemd` instance:
+
+  .. code-block:: console
+
+     systemctl enable lxc@<container>.service
+     systemctl start lxc@<container>.service
+
+  This should ensure that the containers are properly shut down and started
+  with the host system.
 
 
 v0.8.0 (2018-08-06)
@@ -195,11 +548,11 @@ Inventory variable changes
   enabled automatically.
 
 - The ``bootstrap__sudo`` and ``bootstrap__sudo_group`` variables have been
-  removed from the :ref:`debops.bootstrap` role. The ``bootstrap.yml`` playbook
+  removed from the ``debops.bootstrap`` role. The ``bootstrap.yml`` playbook
   now uses the :ref:`debops.sudo` role to configure :command:`sudo` service on
   a host, use its variables instead to control the service in question.
 
-- The :envvar:`bootstrap__admin_groups` variable will now use list of UNIX
+- The ``bootstrap__admin_groups`` variable will now use list of UNIX
   groups with ``root`` access defined by the :ref:`debops.system_groups` via
   Ansible local facts.
 

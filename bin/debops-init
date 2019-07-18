@@ -34,6 +34,7 @@ import codecs
 import subprocess
 import glob
 import argparse
+import socket
 
 from debops import *
 from debops.cmds import *
@@ -112,10 +113,10 @@ HOSTS_FILE_HEADER = """\
 # sshd configuration and more.
 #
 # View the list here:
-# https://github.com/debops/debops-playbooks/blob/master/playbooks/common.yml
+# https://github.com/debops/debops/blob/master/ansible/playbooks/common.yml
 #
 # You should check Getting Started guide for useful suggestions:
-# https://docs.debops.org/en/latest/debops-playbooks/guides/getting-started.html
+# https://docs.debops.org/en/master/introduction/getting-started.html
 """
 
 HOSTS_FILE_CONTENT_CONTROLER = """
@@ -123,8 +124,8 @@ HOSTS_FILE_CONTENT_CONTROLER = """
 # that functionality and more, then uncomment your hostname below.
 
 [debops_all_hosts]
-#%s ansible_connection=local
-""" % platform.node()
+#%s ansible_host=%s ansible_connection=local
+""" % (socket.gethostname(), socket.getfqdn())
 
 HOSTS_FILE_CONTENT_NO_CONTROLER = """
 # Your host was not detected as compatible with DebOps playbooks, so you will

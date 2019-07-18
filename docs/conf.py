@@ -33,12 +33,27 @@ yml_ansible_roles = '../ansible/roles/'
 # in reStructuredText
 for element in os.listdir(rst_ansible_roles):
     if os.path.isdir(yml_ansible_roles + element + '/defaults'):
-        yaml2rst.convert_file(
-            yml_ansible_roles + element + '/defaults/main.yml',
-            rst_ansible_roles + element + '/defaults.rst',
-            strip_regex=r'\s*(:?\[{3}|\]{3})\d?$',
-            yaml_strip_regex=r'^\s{66,67}#\s\]{3}\d?$',
-        )
+        for path, subdirs, files in os.walk(yml_ansible_roles +
+                                            element + '/defaults'):
+            for filename in files:
+                if not filename.startswith('.'):
+                    defaults_file = os.path.join(path, filename)
+                    defaults_dir = os.path.dirname(defaults_file).lstrip('../')
+
+                    if not os.path.isdir(defaults_dir):
+                        try:
+                            os.makedirs(defaults_dir)
+                        except OSError:
+                            print ("Creation of the directory %s failed"
+                                   % defaults_dir)
+
+                    yaml2rst.convert_file(
+                        defaults_file,
+                        (os.path.splitext(defaults_file)[0]
+                            + '.rst').lstrip('../'),
+                        strip_regex=r'\s*(:?\[{3}|\]{3})\d?$',
+                        yaml_strip_regex=r'^\s{66,67}#\s\]{3}\d?$',
+                    )
 
 
 # Ignore warnings about non-local images
@@ -102,7 +117,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'DebOps'
 author = u'Maciej Delmanowski, Nick Janetakis, Robin Schneider'
-copyright = u'2014-2018, {}'.format(author)
+copyright = u'2014-2019, {}'.format(author)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -352,7 +367,7 @@ texinfo_documents = [
 epub_title = u'DebOps'
 epub_author = author
 epub_publisher = author
-epub_copyright = u'2014-2018, Maciej Delmanowski'
+epub_copyright = u'2014-2019, Maciej Delmanowski'
 
 # The basename for the epub file. It defaults to the project name.
 # epub_basename = u'DebOps'

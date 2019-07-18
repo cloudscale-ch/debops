@@ -7,7 +7,7 @@
 # .. contents:: Sections
 #    :local:
 #
-# .. include:: ../../../includes/global.rst
+# .. include:: ../../../../includes/global.rst
 
 
 # libvirt system configuration [[[
@@ -16,7 +16,12 @@
 # .. envvar:: libvirt__base_packages [[[
 #
 # List of base packages to install with Libvirt.
-libvirt__base_packages: [ 'gawk', 'netcat-openbsd', 'python-libvirt', 'python-lxml', 'virt-top', 'virtinst', 'virt-goodies' ]
+libvirt__base_packages:
+  - [ 'gawk', 'netcat-openbsd', 'virt-top', 'virtinst' ]
+  - '{{ "virt-goodies"
+        if (ansible_local|d() and ansible_local.python|d() and
+            (ansible_local.python.installed2|d())|bool)
+        else [] }}'
 
                                                                    # ]]]
 # .. envvar:: libvirt__packages [[[
@@ -149,5 +154,26 @@ libvirt__pools_default:
   - name: 'default'
     type: 'dir'
     path: '/var/lib/libvirt/images'
+                                                                   # ]]]
+                                                                   # ]]]
+# Configuration for other Ansible roles [[[
+# ----------------------------------------
+
+# .. envvar:: libvirt__python__dependent_packages3 [[[
+#
+# Configuration for the :ref:`debops.python` Ansible role.
+libvirt__python__dependent_packages3:
+
+  - 'python3-libvirt'
+  - 'python3-lxml'
+
+                                                                   # ]]]
+# .. envvar:: libvirt__python__dependent_packages2 [[[
+#
+# Configuration for the :ref:`debops.python` Ansible role.
+libvirt__python__dependent_packages2:
+
+  - 'python-libvirt'
+  - 'python-lxml'
                                                                    # ]]]
                                                                    # ]]]

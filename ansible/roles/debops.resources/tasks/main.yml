@@ -11,10 +11,9 @@
     path: '/{{ item.path }}'
     mode: '{{ item.mode }}'
     state: 'directory'
-  with_filetree:
-    - '{{ resources__host_templates }}'
-    - '{{ resources__group_templates }}'
-    - '{{ resources__templates }}'
+  with_filetree: '{{ (resources__host_templates
+                      + resources__group_templates
+                      + resources__templates) | flatten }}'
   when: item.state == 'directory'
 
 - name: Generate custom templates
@@ -22,10 +21,9 @@
     src: '{{ item.src }}'
     dest: '/{{ item.path }}'
     mode: '{{ item.mode }}'
-  with_filetree:
-    - '{{ resources__host_templates }}'
-    - '{{ resources__group_templates }}'
-    - '{{ resources__templates }}'
+  with_filetree: '{{ (resources__host_templates
+                      + resources__group_templates
+                      + resources__templates) | flatten }}'
   when: item.state == 'file'
 
 - name: Recreate custom symlinks
@@ -35,10 +33,9 @@
     mode: '{{ item.mode }}'
     state: 'link'
     force: True
-  with_filetree:
-    - '{{ resources__host_templates }}'
-    - '{{ resources__group_templates }}'
-    - '{{ resources__templates }}'
+  with_filetree: '{{ (resources__host_templates
+                      + resources__group_templates
+                      + resources__templates) | flatten }}'
   when: item.state == 'link'
 
 # Manage custom paths [[[1
@@ -111,6 +108,7 @@
     update:           '{{ item["_update"]       | d(omit) }}'
     verify_commit:    '{{ item.verify_commit    | d(omit) }}'
     version:          '{{ item.version          | d(omit) }}'
+  become: True
   become_user:        '{{ item.owner            | d("root") }}'
   with_flattened:
     - '{{ resources__repositories }}'
@@ -217,6 +215,43 @@
          (item.state|d('present') == 'absent'))
   tags: [ 'role::resources:files' ]
 
+# Manage ACLs [[[1
+- name: Set ACLs on remote hosts
+  acl:
+    path:        '{{ item.1.path        | d(item.0.name) | d(item.0.dest) | d(item.0.path) }}'
+    default:     '{{ item.1.default     | d(omit) }}'
+    entity:      '{{ item.1.entity      | d(omit) }}'
+    entry:       '{{ item.1.entry       | d(omit) }}'
+    etype:       '{{ item.1.etype       | d(omit) }}'
+    permissions: '{{ item.1.permissions | d(omit) }}'
+    follow:      '{{ item.1.follow      | d(omit) }}'
+    recursive:   '{{ item.1.recursive   | d(omit) }}'
+    state:       '{{ item.1.state       | d("present") }}'
+  loop: '{{ (lookup("flattened",
+                    resources__paths
+                    + resources__group_paths
+                    + resources__host_paths
+                    + resources__repositories
+                    + resources__group_repositories
+                    + resources__host_repositories
+                    + resources__urls
+                    + resources__group_urls
+                    + resources__host_urls
+                    + resources__archives
+                    + resources__group_archives
+                    + resources__host_archives
+                    + resources__files
+                    + resources__group_files
+                    + resources__host_files,
+                    wantlist=True))
+             | selectattr("acl", "defined") | list
+             | subelements("acl") }}'
+  loop_control:
+    label: '{{ {"name": (item.0.name | d(item.0.dest) | d(item.0.path)),
+                "acl": item.1} }}'
+  when: item.0.state|d('present') != 'absent'
+  tags: [ 'role::resources:acl' ]
+
 # Manage custom delayed paths [[[1
 - name: Manage delayed paths on remote hosts
   file:
@@ -240,6 +275,17 @@
   when: (resources__enabled|bool and
          ((item.path|d() or item.dest|d() or item.name|d()) or item))
   tags: [ 'role::resources:paths' ]
+
+# Execute custom shell commands [[[1
+# This is not an alternative to a fully-fledged Ansible role.
+- name: Execute shell commands
+  include_tasks: 'shell_commands.yml'
+  loop: '{{ q("flattened", resources__combined_commands) | parse_kv_items }}'
+  loop_control:
+    label: '{{ {"name": item.name} }}'
+  when: resources__enabled|bool and
+        item.name|d() and item.state|d('present') not in [ 'absent', 'ignore' ]
+  no_log: '{{ item.no_log | d(False) }}'
 
 # DebOps post-hook [[[1
 - name: Post hooks

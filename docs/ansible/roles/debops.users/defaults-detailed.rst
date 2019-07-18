@@ -8,45 +8,7 @@ simple strings or lists, here you can find documentation and examples for them.
 
 .. contents::
    :local:
-   :depth: 1
-
-.. _users__ref_groups:
-
-users__groups
--------------
-
-The :envvar:`users__groups`, :envvar:`users__group_groups` and :envvar:`users__host_groups` lists
-can be used to manage UNIX groups on remote hosts using Ansible inventory. Each
-list entry is a YAML dictionary that describes the state and parameters of
-a given group. The group definition is a subset of the user definition
-described below, and some parameters are shared in both cases.
-
-List of known parameters:
-
-``group`` or ``name``
-  Required. Name of the UNIX group to manage. If ``group`` is not specified,
-  ``name`` will be used automatically.
-
-``system``
-  Optional, boolean. If ``True``, a given group will be a "system" group, with
-  it's GID < 1000. If the value is ``False``, the group will be a "normal"
-  group with GID >= 1000.
-
-  If not specified, the :envvar:`users__default_system` variable will determine the
-  group type.
-
-``gid``
-  Optional. Specify the GID of the managed UNIX group.
-
-``state``
-  Optional. If ``present``, the UNIX group will be created. If ``absent``, the
-  specified group will be removed.
-
-Examples
-~~~~~~~~
-
-.. literalinclude:: examples/manage-groups.yml
-   :language: yaml
+   :depth: 3
 
 
 .. _users__ref_accounts:
@@ -54,25 +16,81 @@ Examples
 users__accounts
 ---------------
 
-The :envvar:`users__accounts`, :envvar:`users__group_accounts`, :envvar:`users__host_accounts` as
-well as some additional ``users__*_accounts`` lists are used to manage UNIX
-user accounts. Each list entry is a YAML dictionary with parameters that define
-a particular account.
+The ``users__*_groups`` and ``users__*_accounts`` variables define the UNIX
+group and UNIX user accounts which should be managed by Ansible. The
+distinctive names can be used to order the UNIX group creation before the
+account creation; otherwise both variable sets use the same content.
+
+Examples
+~~~~~~~~
+
+.. literalinclude:: examples/manage-groups.yml
+   :language: yaml
+
+.. literalinclude:: examples/manage-accounts.yml
+   :language: yaml
+
+.. literalinclude:: examples/manage-resources.yml
+   :language: yaml
+
+Syntax
+~~~~~~
+
+The variables are lists of YAML dictionaries, each dictionary defines an UNIX
+group or an UNIX account using specific parameters.
 
 General account parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''''''
 
 ``name``
-  Required. Name of the UNIX user account to manage.
+  Required. Name of the UNIX user account to manage. If ``group`` parameter is
+  not specified, this value is also used to create a private UNIX group for
+  a given user. Configuration entries with the same ``name`` parameter are
+  merged in order of appearance, this can be used to modify existing
+  configuration entries conditionally.
+
+``user``
+  Optional, boolean. If not specified or ``True``, a configuration entry will
+  manage both an UNIX account and its primary UNIX group. If ``False``, only
+  the UNIX group is managed; this can be used to define shared system groups.
+  You can also use the :ref:`debops.system_groups` Ansible role to define UNIX
+  groups with additional functionality like :command:`sudo` configuration, etc.
+
+``local``
+  Optional, boolean. If not specified or ``True``, the role will use the
+  ``libuser`` library to manage the UNIX groups and accounts in the local
+  account and group database. If ``False``, the role will use standard UNIX
+  tools to manage accounts, which might have unintended effects. On normal
+  operation you shouldn't need to define this parameter, it's enabled or
+  disabled by the role as needed.
+
+  See :ref:`users__ref_libuser` for more details.
 
 ``system``
   Optional, boolean. If ``True``, a given user account and primary group will
   be a "system" account and group, with it's UID and GID < 1000. If the value
-  is ``False``, the user account and group will be a "normal" account and group
-  with UID and GID >= 1000.
+  is not specified or ``False``, the user account and group will be a "normal"
+  account and group with UID and GID >= 1000.
 
-  If not specified, the :envvar:`users__default_system` variable will determine the
-  account and group type.
+``chroot``
+  Optional, boolean. If defined and ``True``, a given user account is
+  configured to support SFTPonly operation, and certain defaults are changed if
+  not overridden by other parameters.
+
+  The owner of the home directory will be the ``root`` account instead of the
+  user, to allow chrooting to that directory, the home directory group will be
+  the primary group of a given user. The default permissions are set to
+  ``0751``.
+
+  The default shell is set based on the :envvar:`users__chroot_shell` variable,
+  by default it will be :file:`/usr/sbin/nologin`. Any dotfiles configured
+  globally or for that UNIX account are not installed due to permission issues
+  in the home directory.
+
+  The account will be added to UNIX groups specified in the
+  :envvar:`users__chroot_groups` variable, by default ``sftponly``. See the
+  :ref:`debops.sshd` role for details about configuring the SFTPonly access in
+  OpenSSH server.
 
 ``uid``
   Optional. Specify the UID of the UNIX user account.
@@ -84,6 +102,12 @@ General account parameters
   Optional. Name of the UNIX group which will be set as the primary group of
   a given account. If ``group`` is not specified, ``name`` will be used
   automatically to create the corresponding UNIX group.
+
+``private_group``
+  Optional, boolean. If specified and ``False``, the role will not try to
+  directly manage the specified UNIX ``group`` used with a given UNIX account.
+  This is useful if you want to set a primary UNIX group that's used in other
+  places and which you might not want to remove with the UNIX account.
 
 ``groups``
   Optional. List of UNIX groups to which a given UNIX account should belong.
@@ -99,9 +123,8 @@ General account parameters
 
 ``shell``
   Optional. Specify the default shell to run when a given UNIX account logs in.
-  If not specified, the default system shell (usually :file:`/bin/sh` will be used
-  instead. You can also specify shell for all user accounts managed by this
-  role using the :envvar:`users__default_shell` variable.
+  If not specified, the default system shell (usually :file:`/bin/sh` will be
+  used instead).
 
 ``password``
   Optional. Specify the encrypted hash of the user's password which will be set
@@ -116,6 +139,11 @@ General account parameters
   The module default is to always update the password, the ``debops.users``
   default is to only update the password on initial user creation.
 
+``no_log``
+  Optional, boolean. If defined and ``True``, a given entry will not be logged
+  during the Ansible run. If not specified, if the ``password`` parameter is
+  specified, the role will automatically disable logging as well.
+
 ``non_unique``
   Optional, boolean. If ``True``, allows setting the UID to a non-unique value.
 
@@ -126,7 +154,7 @@ General account parameters
   disabled.
 
 Parameters related to account state
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''''''''''''
 
 ``state``
   Optional. If ``present``, the UNIX user account and primary group will be
@@ -145,10 +173,12 @@ Parameters related to account state
   user account will be disabled.
 
 Parameters related to home directories
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''''''''''''''''''
 
 ``home``
-  Optional. Path to the home directory if a given user account.
+  Optional. Path to the home directory of a given user account. If not
+  specified, the role will check the home directory path of an existing account
+  defined on the host.
 
 ``home_owner``
   Optional. Specify the owner of the home directory of a given UNIX account.
@@ -157,9 +187,11 @@ Parameters related to home directories
   Optional. Specify the group of the home directory of a given UNIX account.
 
 ``home_mode``
-  Optional. Specify the mode of the home directory of a given UNIX account.
+  Optional. Specify the mode of the home directory of a given UNIX account. If
+  not specified, the value of the :envvar:`users__default_home_mode` will be
+  used instead.
 
-``createhome``
+``create_home``
   Optional, boolean. If ``True``, the role will create the home directory for
   a given user account if it doesn't exist already. If not specified, home
   directory is created by default by the `Ansible user module`_.
@@ -205,7 +237,7 @@ Parameters related to home directories
     make sense in this context and shouldn't be used.
 
 Parameters related to the account's private SSH key
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''''''''''''''''''''''''''''
 
 ``generate_ssh_key``
   Optional, boolean. If ``True``, Ansible will generate a private SSH key for
@@ -230,7 +262,7 @@ Parameters related to the account's private SSH key
   will be generated automatically.
 
 Parameters related to public SSH keys
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''''''''''''''
 
 ``sshkeys``
   Optional. String or a YAML list of public SSH keys to configure for a given
@@ -248,7 +280,7 @@ Parameters related to public SSH keys
   removed entirely.
 
 Parameters related to mail forwarding
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'''''''''''''''''''''''''''''''''''''
 
 ``forward``
   Optional. String or YAML list of e-mail addresses which will be used to
@@ -262,175 +294,114 @@ Parameters related to mail forwarding
   file. If ``absent``, the entries will be removed from the configuration file.
 
 Parameters related to user configuration files
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+''''''''''''''''''''''''''''''''''''''''''''''
 
-``dotfiles_enabled``
+``dotfiles_enabled`` / ``dotfiles``
   Optional, boolean. Enable or disable management of the user configuration
   files.
 
-``dotfiles_name``
-  Optional. Name of the key in the :envvar:`users__dotfiles_combined_map` dictionary
-  which corresponds to the user configuration files to use. If not specified,
-  the default from :envvar:`users__dotfiles_name` will be used.
-
-You can also use the parameters below to configure the dotfiles directly for
-a specific account.
-
 ``dotfiles_repo``
-  Optional. URL to the :command:`git` repository with the user configuration files to
-  deploy. If not specified, the default dotfiles repository will be used
-  instead.
+  Optional. An URL or an absolute path on the host to the :command:`git`
+  repository with the user configuration files to deploy. If not specified, the
+  default dotfiles repository, defined in the :envvar:`users__dotfiles_repo`
+  variable, will be used instead. The repository will be deployed or updated
+  using the :command:`yadm` script, installed by the :ref:`debops.yadm` Ansible
+  role.
 
-``dotfiles_dest``
-  Optional. Specify the path where the user configuration files should be
-  cloned into. If not specified, :envvar:`users__dotfiles_dest` variable will be used
-  instead, by default cloning the :command:`git` repository to :file:`~/.config/dotfiles/`
-  directory.
+Parameters related to directory and file resources
+''''''''''''''''''''''''''''''''''''''''''''''''''
 
-``dotfiles_update``
-  Optional, boolean. Specify if the user configuration files repository should
-  be updated on each Ansible run. If not set, the default from
-  :envvar:`users__dotfiles_update` will be used instead.
+``resources``
+  This parameter can be used to manage directories, files and symlinks for
+  specific UNIX accounts using Ansible inventory. This functionality is meant to
+  be used to manage small amounts of data, like custom configuration files,
+  private SSH keys and so on. For more advanced management, you should consider
+  using :ref:`debops.resources` Ansible role, or even writing a custom Ansible
+  role from scratch.
 
-``dotfiles_command``
-  Optional. Command to execute to deploy the dotfiles. The command will be
-  executed in the checked out directory (by default :file:`~/.config/dotfiles/`)
-  with the user privileges.
+  Tasks that manage the resources are executed as the ``root`` account, but the
+  owner and group of the files is automatically set to those used by a given UNIX
+  account. Directory and file paths will be prepended with a path to the
+  ``$HOME`` directory of a given user, and should be defined as relative, without
+  ``/`` at the beginning.
 
-  The task checks the output of the given command; if it's not empty, the task
-  will be marked as changed.
+  The ``resources`` parameter should contain a list of entries, each entry should
+  be defined as either a path string which denotes a directory relative to the
+  user's ``$HOME`` directory, or a YAML dictionary that describes a given
+  resource using specific parameters:
 
-``dotfiles_creates``
-  Optional. Path to a file which indicates that the dotfiles deployment has
-  been completed and the command task will be skipped. If not specified, the
-  command used to deploy the configuration files will be executed on each
-  Ansible run.
+  ``dest`` or ``path``
+    Required. Path to the resource managed by this entry, relative to the user's
+    ``$HOME`` directory. All subdirectories specified in the path will be created
+    automatically.
 
-Examples
-~~~~~~~~
+  ``content``
+    If the resource type is a ``file``, this parameter can be used to specify the
+    contents of the file that is managed by this entry, usually in the form of
+    a YAML text block. It shouldn't be specified together with the ``src``
+    parameter.
 
-.. literalinclude:: examples/manage-accounts.yml
-   :language: yaml
+  ``src``
+    If the resource type is a ``link``, this parameter specifies the target of
+    the symlink. In case of symlinks to resources owned by other UNIX accounts
+    than the user, you need to specify the ``owner`` and ``group`` parameters to
+    that of the symlinked file (for example ``root`` for files or directories
+    owned by the ``root`` account), otherwise the role will change them to the
+    owner/group of a given user.
 
+    If the resource type is a ``file``, this parameter can be used to specify the
+    source file on the Ansible Controller to copy to the remote host. It
+    shouldn't be specified together with the ``content`` parameter.
 
-.. _users__ref_resources:
+  ``state``
+    Optional. This variable defines the resource state and it's type:
 
-users__resources
-----------------
+    - ``absent``: the resource will be removed
+    - ``directory``: the resource is a directory
+    - ``file``: the resource is a file
+    - ``link``: the resource is a symlink
+    - ``touch``: the resource will create an empty file, or "touch" an existing
+      file on each Ansible run
 
-The :envvar:`users__resources`, :envvar:`users__group_resources` and
-:envvar:`users__host_resources` lists can be used to manage directories, files
-and symlinks for specific UNIX accounts using Ansible inventory. This
-functionality is meant to be used to manage small amounts of data, like custom
-configuration files, private SSH keys and so on. For more advanced management,
-you should consider using debops.resources_ Ansible role, or even writing
-a custom Ansible role from scratch.
+    If this parameter is not specified, the resource will be treated as
+    a directory.
 
-Tasks that manage the resources are executed with the privileges of a specific
-user account; this account should exist (presumably it was created by the role
-earlier). This allows the usage of ``~/`` in the paths to manage directories
-and files relative to the user's ``$HOME`` directory.
+  ``force``
+    Optional, boolean. If ``True``, the files will be always overwritten, if
+    ``False``, files will be copied only if they don't exist. This parameter can
+    also be used to force creation of symlinks.
 
-Each entry on the list is a YAML dictionary with specific parameters:
+  ``owner``
+    Optional. Specify the UNIX account which should be the owner of a given
+    file/directory. For symlinks, this defines the owner of the link source and
+    might be needed if the owner is different than the current user.
 
-``name``
-  Required. Name of the user account which will be used to run the Ansible
-  tasks using the "become" method.
+  ``group``
+    Optional. Specify the UNIX group which should be the primary group of
+    a given file/directory. For symlinks, this defines the group of the link
+    source and might be needed if the group is different than the primary group
+    of the current user.
 
-``state``
-  Required. This variable defines the resource state and it's type:
+  ``mode``
+    Optional. Set specific permissions for a given file/directory/symlink.
 
-  - ``absent``: the resource will be removed
-  - ``directory``: the resource is a directory
-  - ``file``: the resource is a file
-  - ``link``: the resource is a symlink
-  - ``touch``: the resource will create an empty file, or "touch" an existing
-    file on each Ansible run
+  ``recurse``
+    Optional, boolean. Recursively set specified permission for all directories
+    in the directory tree that lead to a given directory/file, depending on user
+    privileges.
 
-  If this parameter is not specified, the resource will be treated as
-  a directory.
+  ``parent_owner``
+    Optional. Specify the UNIX account that should be the owner of a parent
+    directory of a given resource.
 
-``dest`` or ``path``
-  Required. Path to the resource managed by this entry. Usually you want to
-  specify it as relative to the user's ``$HOME`` directory.
+  ``parent_group``
+    Optional. Specify the UNIX group that should be the main group of a parent
+    directory of a given resource.
 
-``src``
-  If the resource type is a ``link``, this parameter specifies the target of
-  the symlink.
+  ``parent_mode``
+    Optional. Specify the permissions of the parent directory of a given
+    file resource.
 
-  If the resource type is a ``file``, this parameter can be used to specify the
-  source file on the Ansible Controller to copy to the remote host. It
-  shouldn't be specified together with the ``content`` parameter.
-
-``content``
-  If the resource type is a ``file``, this parameter can be used to specify the
-  contents of the file that is managed by this entry, usually in the form of
-  a YAML text block. It shouldn't be specified together with the ``src``
-  parameter.
-
-``force``
-  Optional, boolean. If ``True``, the files will be always overwritten, if
-  ``False``, files will be copied only if they don't exist. This parameter can
-  also be used to force creation of symlinks.
-
-``mode``
-  Optional. Set specific permissions for a given file/directory/symlink.
-
-``recurse``
-  Optional, boolean. Recursively set specified permission for all directories
-  in the directory tree that lead to a given directory/file, depending on user
-  privileges.
-
-``parent``
-  Optional, boolean. If ``True`` (default), the role will create the parent
-  directories of a given resource as needed, depending on the privileges of
-  a given user account. If ``False``, role will not try to create the missing
-  directories.
-
-``parent_mode``
-  Optional. Specify the permissions of the parent directory of a given
-  file resource.
-
-``parent_recurse``
-  Optional, boolean. If ``True``, parent permissions will be applied
-  recursively to all parent directories.
-
-Examples
-~~~~~~~~
-
-.. literalinclude:: examples/manage-resources.yml
-   :language: yaml
-
-
-.. _users__ref_dotfiles_map:
-
-users__dotfiles_map
--------------------
-
-This is a YAML dictionary which can be used to define sets of user
-configuration files. These sets can then be enabled globally or per user
-account as needed. Each set is a YAML dictionary with specific parameters:
-
-``repo``
-  Required. An URL to the :command:`git` repository which holds the user configuration
-  files.
-
-``command``
-  Optional. A command executed by Ansible used to deploy the dotfiles. The
-  command will be executed with a given user privileges, in the dotfiles
-  directory (by default :file:`~/.config/dotfiles/`).
-
-``creates``
-  Optional. Path to the file which will indicate that the dotfiles have been
-  deployed. If not specified, the command set in the ``command`` parameter will
-  be executed on each Ansible run.
-
-``shell``
-  Optional. Specify the shell which should be enabled for users that use
-  a given set of user configuration files.
-
-Examples
-~~~~~~~~
-
-.. literalinclude:: examples/manage-dotfiles.yml
-   :language: yaml
+  ``parent_recurse``
+    Optional, boolean. If ``True``, parent permissions will be applied
+    recursively to all parent directories.

@@ -607,7 +607,6 @@
 .. _Ansible znode module: https://docs.ansible.com/ansible/znode_module.html
 .. _Ansible zypper module: https://docs.ansible.com/ansible/zypper_module.html
 .. _Ansible zypper_repository module: https://docs.ansible.com/ansible/zypper_repository_module.html
-.. _Ansible  module: https://docs.ansible.com/ansible/_module.html
 .. Deprecated modules follow:
 .. _Ansible docker module: https://docs.ansible.com/ansible/docker_module.html
 .. _Ansible ec2_ami_search module: https://docs.ansible.com/ansible/ec2_ami_search_module.html
@@ -641,7 +640,6 @@
 .. _debops.authorized_keys: https://github.com/debops/ansible-authorized_keys
 .. _debops.avahi: https://github.com/debops/ansible-avahi
 .. _debops.backporter: https://github.com/debops/ansible-backporter
-.. _debops.bootstrap: https://github.com/debops/ansible-bootstrap
 .. _debops.boxbackup: https://github.com/debops/ansible-boxbackup
 .. _debops.console: https://github.com/debops/ansible-console
 .. _debops.core: https://github.com/debops/ansible-core
@@ -732,7 +730,6 @@
 .. _debops.salt: https://github.com/debops/ansible-salt
 .. _debops.samba: https://github.com/debops/ansible-samba
 .. _debops.secret: https://github.com/debops/ansible-secret
-.. _debops.sftpusers: https://github.com/debops/ansible-sftpusers
 .. _debops.sks: https://github.com/debops/ansible-sks
 .. _debops.slapd: https://github.com/debops/ansible-slapd
 .. _debops.smstools: https://github.com/debops/ansible-smstools
@@ -759,7 +756,6 @@
 .. _debops.atd documentation: https://docs.debops.org/en/latest/ansible/roles/ansible-atd/docs/index.html
 .. _debops.authorized_keys documentation: https://docs.debops.org/en/latest/ansible/roles/ansible-authorized_keys/docs/index.html
 .. _debops.avahi documentation: https://docs.debops.org/en/latest/ansible/roles/ansible-avahi/docs/index.html
-.. _debops.bootstrap documentation: https://docs.debops.org/en/latest/ansible/roles/ansible-bootstrap/docs/index.html
 .. _debops.core documentation: https://docs.debops.org/en/latest/ansible/roles/ansible-core/docs/index.html
 .. _debops.cron documentation: https://docs.debops.org/en/latest/ansible/roles/ansible-cron/docs/index.html
 .. _debops.cryptsetup documentation: https://docs.debops.org/en/latest/ansible/roles/ansible-cryptsetup/docs/index.html
@@ -918,10 +914,11 @@
 .. _DebOps API: https://github.com/debops/debops-api
 .. _DebOps mailing list: https://lists.debops.org/
 .. _DebOps Playbooks: https://github.com/debops/debops-playbooks/
-.. _DebOps common playbook: https://github.com/debops/debops-playbooks/blob/master/playbooks/common.yml
+.. _DebOps common playbook: https://github.com/debops/debops/blob/master/ansible/playbooks/common.yml
+.. _DebOps bootstrap playbook: https://github.com/debops/debops/blob/master/ansible/playbooks/bootstrap.yml
+.. _DebOps bootstrap-ldap playbook: https://github.com/debops/debops/blob/master/ansible/playbooks/bootstrap-ldap.yml
 .. _DebOps Documentation: https://docs.debops.org/en/latest/
 .. _DebOps Examples: https://github.com/debops/examples/
-.. _Getting Started with DebOps: https://docs.debops.org/en/latest/debops-playbooks/docs/guides/getting-started.html
 .. _DebOps Contrib: https://github.com/debops-contrib/debops-contrib
 .. _DebOps Contrib playbooks: https://github.com/debops-contrib/debops-contrib-playbooks
 .. _DebOps Policy: https://docs.debops.org/en/latest/debops-policy/docs/index.html
@@ -1034,7 +1031,7 @@
 .. _Ubuntu: https://www.ubuntu.com/
 
 .. _Free software: https://en.wikipedia.org/wiki/Free_software
-.. _GPL-3.0: https://en.wikipedia.org/wiki/GNU_GPLv3
+.. _GPL-3.0-only: https://en.wikipedia.org/wiki/GNU_GPLv3
 .. _Open-source software: https://en.wikipedia.org/wiki/Open-source_software
 .. _Free and open-source software: https://en.wikipedia.org/wiki/Free_and_open-source_software
 
@@ -1086,7 +1083,7 @@
 .. _PKI: https://en.wikipedia.org/wiki/Public_key_infrastructure
 .. _HSTS: https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security
 .. _HTTP Strict Transport Security: https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security
-.. _HSTS Preload List Submission: https://hstspreload.appspot.com/
+.. _HSTS Preload List Submission: https://hstspreload.org/
 .. _HPKP: https://en.wikipedia.org/wiki/HTTP_Public_Key_Pinning
 .. _HTTP Public Key Pinning: https://en.wikipedia.org/wiki/HTTP_Public_Key_Pinning
 .. _TOFU: https://en.wikipedia.org/wiki/Trust_on_first_use
@@ -1129,7 +1126,7 @@
 .. _SKS OpenPGP keyserver pool: https://sks-keyservers.net/
 .. Prefer the last one.
 
-.. _Elastic: https://elastic.co/
+.. _Elastic: https://www.elastic.co/
 .. _OpenPGP Best Practices: https://help.riseup.net/en/security/message-security/openpgp/best-practices
 .. _HashiCorp: https://en.wikipedia.org/wiki/HashiCorp
 .. _HashiCorp Security Policy: https://www.hashicorp.com/security.html
@@ -1177,7 +1174,7 @@
 .. _SOTA: https://en.wikipedia.org/wiki/State_of_the_art
 .. _HTML title tag: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title
 
-.. _Ansible Modules: https://docs.ansible.com/ansible/modules.html
+.. _Ansible module: https://docs.ansible.com/ansible/modules.html
 .. _YAML Syntax: https://docs.ansible.com/ansible/YAMLSyntax.html
 .. _reStructuredText: http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html
 .. _Sphinx: http://www.sphinx-doc.org/

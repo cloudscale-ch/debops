@@ -14,6 +14,11 @@
 
   roles:
 
+    - role: debops.keyring
+      tags: [ 'role::keyring', 'skip::keyring', 'role::elastic_co' ]
+      keyring__dependent_apt_keys:
+        - '{{ elastic_co__keyring__dependent_apt_keys }}'
+
     - role: debops.elasticsearch/env
       tags: [ 'role::elasticsearch', 'role::secret', 'role::elasticsearch:config' ]
 
@@ -32,6 +37,11 @@
       tags: [ 'role::etc_services', 'skip::etc_services' ]
       etc_services__dependent_list:
         - '{{ elasticsearch__etc_services__dependent_list }}'
+
+    - role: debops.sysctl
+      tags: [ 'role::sysctl', 'skip::sysctl' ]
+      sysctl__dependent_parameters:
+        - '{{ elasticsearch__sysctl__dependent_parameters }}'
 
     - role: debops.ferm
       tags: [ 'role::ferm', 'skip::ferm' ]

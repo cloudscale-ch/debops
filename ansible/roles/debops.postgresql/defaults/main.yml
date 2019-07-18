@@ -7,7 +7,7 @@
 # .. contents:: Sections
 #    :local:
 #
-# .. include:: ../../../includes/global.rst
+# .. include:: ../../../../includes/global.rst
 
 
 # PostgreSQL installation, packages [[[
@@ -41,7 +41,7 @@ postgresql__base_packages: [ 'postgresql-client' ]
 # .. envvar:: postgresql__python_packages [[[
 #
 # List of Python packages to install with PostgreSQL.
-postgresql__python_packages: [ 'python-psycopg2' ]
+postgresql__python_packages: []
 
                                                                    # ]]]
 # .. envvar:: postgresql__packages [[[
@@ -91,8 +91,8 @@ postgresql__port: '5432'
 # locally, host will delegate the tasks to itself automatically.
 postgresql__delegate_to: '{{ postgresql__server
                              if (postgresql__server|d() and
-                                 (postgresql__server != "localhost" or not postgresql__server))
-                             else omit }}'
+                                 postgresql__server != "localhost")
+                             else inventory_hostname }}'
 
                                                                    # ]]]
 # .. envvar:: postgresql__password_hostname [[[
@@ -243,5 +243,35 @@ postgresql__apt_preferences__dependent_list:
     reason: 'Version parity with Debian Jessie'
     role: 'debops.postgresql'
                                                                    # ]]]
+                                                                   # ]]]
+                                                                   # ]]]
+# Configuration for other Ansible roles [[[
+# ----------------------------------------
+
+# .. envvar:: postgresql__keyring__dependent_apt_keys [[[
+#
+# Configuration for the :ref:`debops.keyring` Ansible role.
+postgresql__keyring__dependent_apt_keys:
+
+  - id: '{{ postgresql__upstream_key_id }}'
+    repo: '{{ postgresql__upstream_apt_repo }}'
+    state: '{{ "present" if postgresql__upstream|bool else "absent" }}'
+
+                                                                   # ]]]
+# .. envvar:: postgresql__python__dependent_packages3 [[[
+#
+# Configuration for the :ref:`debops.python` Ansible role.
+postgresql__python__dependent_packages3:
+
+  - 'python3-psycopg2'
+
+                                                                   # ]]]
+# .. envvar:: postgresql__python__dependent_packages2 [[[
+#
+# Configuration for the :ref:`debops.python` Ansible role.
+postgresql__python__dependent_packages2:
+
+  - 'python-psycopg2'
+
                                                                    # ]]]
                                                                    # ]]]

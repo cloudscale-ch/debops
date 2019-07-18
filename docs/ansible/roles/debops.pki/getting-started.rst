@@ -72,8 +72,8 @@ ones you will likely want to change are:
 
   ``debops.pki`` now supports the X.509 Name Constraints certificate extension by
   default. This may break software using old version of OpenSSL and multi-domain
-  environments. Please see ``name_constraints`` under :ref:`pki__ref_authorities`
-  for more information.
+  environments. Please see ``name_constraints`` and ``name_constraints_critical``
+  under :ref:`pki__ref_authorities` for more information.
 
 Example inventory
 -----------------
@@ -92,3 +92,16 @@ special ``debops.pki/env`` role provided within the main role.
 
 .. literalinclude:: ../../../../ansible/playbooks/service/pki.yml
    :language: yaml
+   
+Renewing Certificates
+------------------------
+
+For renewing certificates, just
+
+1. remove file:`/etc/pki/realms/<realm>/` from the remote host and
+2. re-run debops.pki against it, e.g. this::
+
+     debops service/pki  --limit=$REMOTE_HOST
+
+This will create a new key for the remote host.
+If you use external keys, they will be preserved

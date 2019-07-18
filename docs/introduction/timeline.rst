@@ -4,7 +4,7 @@ Timeline
 This document is a summary of the DebOps development over time. You can see
 most of the project's history in :command:`git` logs, however tracing it might
 be confusing due to the split and subsequent merge of the code back together.
-Here, we try to explain why that happended.
+Here, we try to explain why that happened.
 
 
 Summary of the events
@@ -20,7 +20,7 @@ the codebase.
 .. __: https://github.com/debops/
 .. __: https://galaxy.ansible.com/debops/
 
-The decision to move the project coodebase to the separate :command:`git`
+The decision to move the project codebase to the separate :command:`git`
 repositories shaped the DebOps project in multiple ways. It enforced the code
 separation between different Ansible roles that required development of proper
 ways to make them interact with each other and pass the data around. New open
@@ -41,8 +41,8 @@ to make the DebOps development easier.
 
 The process was completed over a period of a few months. As the result, the
 development model also changed into a more distributed way with multiple forks
-of the main repository. At present, the DebOps codebase is being prepared for
-its first official stable release.
+of the main repository. First official stable release was published in
+May 2019.
 
 
 2013
@@ -59,11 +59,9 @@ May 2013
 September 2013
 ~~~~~~~~~~~~~~
 
-- `Ansible 1.3 ("Top of the World")`__ is released. This version introduced the
+- Ansible 1.3 ("Top of the World") is released. This version introduced the
   role default variables, local facts and role dependencies, which became an
   integral part of DebOps later on.
-
-.. __: https://github.com/ansible/ansible/blob/devel/CHANGELOG.md#13-top-of-the-world---september-13th-2013
 
 October 2013
 ~~~~~~~~~~~~
@@ -173,7 +171,7 @@ November 2014
   with :ref:`debops.ifupdown` role and others that require IP address
   manipulation. `The plugin is later merged into Ansible Core`__.
 
-.. __: https://docs.ansible.com/ansible/latest/playbooks_filters_ipaddr.html
+.. __: https://docs.ansible.com/ansible/latest/user_guide/playbooks_filters_ipaddr.html
 .. __: https://github.com/ansible/ansible/commit/7e46554160
 
 December 2014
@@ -183,7 +181,7 @@ December 2014
   later `published on PyPI`__ which will become main installation method.
 
 .. __: https://github.com/debops/debops/commit/88e3a8e
-.. __: https://pypi.python.org/pypi/debops
+.. __: https://pypi.org/project/debops/
 
 - `debops-tools v0.1.0`__ is released. This repository contains various scripts
   that can be used to install or update DebOps roles and playbooks
@@ -259,7 +257,7 @@ January 2016
 
 - `Ansible 2.0 ("Over the Hills and Far Away")`__ is released.
 
-.. __: https://github.com/ansible/ansible/blob/devel/CHANGELOG.md#20-over-the-hills-and-far-away---jan-12-2016
+.. __: https://github.com/ansible/ansible/blob/stable-2.0/CHANGELOG.md
 
 March 2016
 ~~~~~~~~~~
@@ -277,8 +275,8 @@ April 2016
   Unfortunately, problems with `debops-doc package`__ prevent full inclusion of
   the project in Debian.
 
-.. __: https://bugs.debian.org/819816
-.. __: https://bugs.debian.org/820367
+.. __: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=819816
+.. __: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=820367
 
 July 2016
 ~~~~~~~~~
@@ -286,8 +284,8 @@ July 2016
 - Robin Schneider `creates DebOps entry`__ in the
   `Core Infrastructure Initiative Best Practices`__ program.
 
-.. __: https://bestpractices.coreinfrastructure.org/projects/237
-.. __: https://bestpractices.coreinfrastructure.org/
+.. __: https://bestpractices.coreinfrastructure.org/en/projects/237
+.. __: https://bestpractices.coreinfrastructure.org/en
 
 
 2017
@@ -397,6 +395,23 @@ May 2018
 
 .. __: https://wiki.debian.org/LTS
 
+
+2019
+----
+
+May 2019
+~~~~~~~~
+
+- `First DebOps stable release - v1.0.0`__.
+
+.. __: https://lists.debops.org/pipermail/debops-users/2019-May/000196.html
+
+July 2019
+~~~~~~~~~
+
+- `Debian 10.0 (buster)`__ becomes a Debian Stable release.
+
+.. __: https://www.debian.org/releases/buster/
 
 2020
 ----

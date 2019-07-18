@@ -10,6 +10,16 @@
 
   roles:
 
+    - role: debops.keyring
+      tags: [ 'role::keyring', 'skip::keyring',
+              'role::nodejs', 'role::postgresql', 'role::nginx' ]
+      keyring__dependent_apt_keys:
+        - '{{ nodejs__keyring__dependent_apt_keys }}'
+        - '{{ postgresql__keyring__dependent_apt_keys }}'
+        - '{{ nginx__keyring__dependent_apt_keys }}'
+      nodejs__upstream: True
+      nodejs__yarn_upstream: True
+
     - role: debops.gitlab/env
       tags: [ 'role::gitlab', 'role::postgresql' ]
 
@@ -26,6 +36,17 @@
         - '{{ ruby__apt_preferences__dependent_list }}'
         - '{{ gitlab__apt_preferences__dependent_list }}'
 
+    - role: debops.python
+      tags: [ 'role::python', 'skip::python' ]
+      python__dependent_packages3:
+        - '{{ gitlab__python__dependent_packages3 }}'
+        - '{{ nginx__python__dependent_packages3 }}'
+        - '{{ postgresql__python__dependent_packages3 if gitlab__database == "postgresql" else [] }}'
+      python__dependent_packages2:
+        - '{{ gitlab__python__dependent_packages2 }}'
+        - '{{ nginx__python__dependent_packages2 }}'
+        - '{{ postgresql__python__dependent_packages2 if gitlab__database == "postgresql" else [] }}'
+
     - role: debops.golang
       tags: [ 'role::golang', 'skip::golang' ]
 
@@ -38,6 +59,11 @@
       tags: [ 'role::etc_services', 'skip::etc_services' ]
       etc_services__dependent_list:
         - '{{ gitlab__etc_services__dependent_list }}'
+
+    - role: debops.logrotate
+      tags: [ 'role::logrotate', 'skip::logrotate' ]
+      logrotate__dependent_config:
+        - '{{ gitlab__logrotate__dependent_config }}'
 
     - role: debops.ferm
       tags: [ 'role::ferm', 'skip::ferm' ]
@@ -71,3 +97,9 @@
 
     - role: debops.gitlab
       tags: [ 'role::gitlab', 'skip::gitlab' ]
+
+# Import the 'debops.docker_registry' playbook to apply configuration of the
+# Docker Registry that is defined by the 'debops.gitlab' role. This has an
+# effect only when the 'debops.docker_registry' role is enabled on the host via
+# its corresponding Ansible inventory group.
+- import_playbook: 'docker_registry.yml'

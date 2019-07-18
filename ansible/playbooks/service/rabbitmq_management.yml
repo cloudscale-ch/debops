@@ -10,6 +10,11 @@
 
   roles:
 
+    - role: debops.keyring
+      tags: [ 'role::keyring', 'skip::keyring', 'role::nginx' ]
+      keyring__dependent_apt_keys:
+        - '{{ nginx__keyring__dependent_apt_keys }}'
+
     - role: debops.rabbitmq_server/env
       tags: [ 'role::rabbitmq_server', 'role::secret', 'role::rabbitmq_server:config' ]
       when: rabbitmq_management__local|bool
@@ -35,6 +40,13 @@
       tags: [ 'role::ferm', 'skip::ferm' ]
       ferm__dependent_rules:
         - '{{ nginx__ferm__dependent_rules }}'
+
+    - role: debops.python
+      tags: [ 'role::python', 'skip::python' ]
+      python__dependent_packages3:
+        - '{{ nginx__python__dependent_packages3 }}'
+      python__dependent_packages2:
+        - '{{ nginx__python__dependent_packages2 }}'
 
     - role: debops.nginx
       tags: [ 'role::nginx', 'skip::nginx' ]

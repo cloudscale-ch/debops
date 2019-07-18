@@ -59,8 +59,11 @@ try:
     setup(
         name="debops",
         version=unicode(RELEASE),
-        install_requires=['netaddr', 'argparse', 'passlib', 'ansible',
-                          'python-ldap', 'dnspython', 'future'],
+        install_requires=['argparse', 'future'],
+        extras_require={
+            'ansible': ['ansible', 'netaddr', 'passlib',
+                        'python-ldap', 'dnspython']
+            },
 
         scripts=SCRIPTS,
         packages=find_packages(exclude=['tests']),
@@ -71,7 +74,7 @@ try:
         author_email="debops-users@lists.debops.org",
         description="Your Debian-based data center in a box",
         long_description=README,
-        license="GPL-3.0",
+        license="GPL-3.0-only",
         keywords="ansible debian sysadmin",
         url="https://debops.org/",
         python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, '
@@ -79,7 +82,7 @@ try:
         download_url="https://github.com/debops/debops"
                     "/archive/v" + unicode(RELEASE) + ".tar.gz",
         classifiers=[
-                    'Development Status :: 4 - Beta',
+                    'Development Status :: 5 - Production/Stable',
                     'Environment :: Console',
                     'Intended Audience :: Information Technology',
                     'Intended Audience :: System Administrators',

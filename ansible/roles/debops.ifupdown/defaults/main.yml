@@ -7,7 +7,7 @@
 # .. contents:: Sections
 #    :local:
 #
-# .. include:: ../../../includes/global.rst
+# .. include:: ../../../../includes/global.rst
 
 
 # APT packages [[[
@@ -16,7 +16,12 @@
 # .. envvar:: ifupdown__base_packages [[[
 #
 # List of base APT packages to install.
-ifupdown__base_packages: [ 'ifupdown', 'resolvconf', 'rdnssd', 'bsdutils', 'rsync' ]
+ifupdown__base_packages:
+  - [ 'ifupdown', 'resolvconf', 'bsdutils', 'rsync' ]
+  - '{{ []
+        if (ansible_local|d() and ansible_local.ifupdown|d() and
+            "/usr/sbin/NetworkManager" in ansible_local.ifupdown.known_managers|d([]))
+        else "rdnssd" }}'
 
                                                                    # ]]]
 # .. envvar:: ifupdown__dynamic_packages [[[
@@ -31,6 +36,12 @@ ifupdown__dynamic_packages: '{{ lookup("template", "lookup/ifupdown__dynamic_pac
 #
 # List of additional APT packages to install with the role.
 ifupdown__packages: []
+                                                                   # ]]]
+# .. envvar:: ifupdown__purge_packages [[[
+#
+# List of APT packages which will be purged when this role is
+# enabled, to stop them from interfering with ``ifupdown``.
+ifupdown__purge_packages: [ 'netplan.io', 'nplan' ]
                                                                    # ]]]
                                                                    # ]]]
 # General role configuration [[[

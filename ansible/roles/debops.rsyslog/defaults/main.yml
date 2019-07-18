@@ -7,7 +7,7 @@
 # .. contents:: Sections
 #    :local:
 #
-# .. include:: ../../../includes/global.rst
+# .. include:: ../../../../includes/global.rst
 
 
 # General configuration [[[
@@ -684,6 +684,13 @@ rsyslog__conf_filename_templates:
           $ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
 
 # ]]]
+# .. envvar:: rsyslog__conf_additional_templates [[[
+#
+# List of additional ``rsyslogd`` templates which are used for remote logs.
+# See :ref:`rsyslog__conf_additional_templates`
+rsyslog__conf_additional_templates: []
+
+# ]]]
 # .. envvar:: rsyslog__conf_remote_forward [[[
 #
 # Enable log forwardin to another ``rsyslogd`` instance if it's enabled in
@@ -999,7 +1006,11 @@ rsyslog__logrotate__dependent_config:
           delaycompress
           compress
         postrotate: |
-          invoke-rc.d rsyslog rotate > /dev/null
+          {{ "invoke-rc.d rsyslog rotate > /dev/null"
+            if (ansible_distribution_release in
+                 ([ "wheezy", "jessie", "stretch",
+                    "precise", "trusty" ]))
+            else "/usr/lib/rsyslog/rsyslog-rotate" }}
 
       - logs: '{{ rsyslog__default_logfiles | difference(["/var/log/syslog"]) }}'
         options: |
@@ -1011,7 +1022,11 @@ rsyslog__logrotate__dependent_config:
           delaycompress
           sharedscripts
         postrotate: |
-          invoke-rc.d rsyslog rotate > /dev/null
+          {{ "invoke-rc.d rsyslog rotate > /dev/null"
+            if (ansible_distribution_release in
+                 ([ "wheezy", "jessie", "stretch",
+                    "precise", "trusty" ]))
+            else "/usr/lib/rsyslog/rsyslog-rotate" }}
 
   - filename: 'rsyslog-remote'
     logs: [ '/var/log/remote/*/*/syslog', '/var/log/remote/*/*/*.log' ]
@@ -1024,7 +1039,11 @@ rsyslog__logrotate__dependent_config:
       delaycompress
       sharedscripts
     postrotate: |
-      invoke-rc.d rsyslog rotate > /dev/null
+      {{ "invoke-rc.d rsyslog rotate > /dev/null"
+        if (ansible_distribution_release in
+             ([ "wheezy", "jessie", "stretch",
+                "precise", "trusty" ]))
+        else "/usr/lib/rsyslog/rsyslog-rotate" }}
 # ]]]
 # ]]]
 # ]]]

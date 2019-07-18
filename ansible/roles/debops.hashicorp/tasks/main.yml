@@ -5,12 +5,12 @@
 
 - name: Install required packages
   package:
-    name: '{{ item }}'
+    name: '{{ q("flattened", (hashicorp__base_packages
+                              + hashicorp__packages
+                              + hashicorp__dependent_packages)) }}'
     state: 'present'
-  with_flattened:
-    - '{{ hashicorp__base_packages }}'
-    - '{{ hashicorp__packages }}'
-    - '{{ hashicorp__dependent_packages }}'
+  register: hashicorp__register_packages
+  until: hashicorp__register_packages is succeeded
   when: (hashicorp__applications or hashicorp__dependent_applications)
 
 
@@ -89,22 +89,6 @@
   when: (hashicorp__applications or hashicorp__dependent_applications)
   block:
 
-    # OpenPGP key management [[[2
-
-    - name: Ensure user GnuPG directory exists
-      file:
-        path: '{{ hashicorp__home + "/.gnupg" }}'
-        state: 'directory'
-        mode: '0700'
-
-    - name: Import HashiCorp OpenPGP key
-      apt_key:
-        id: '{{ hashicorp__gpg_key_id | replace(" ","") }}'
-        keyring: '{{ hashicorp__home + "/.gnupg/pubring.gpg" }}'
-        keyserver: '{{ hashicorp__keyserver }}'
-        state: 'present'
-
-
     # HashiCorp application archive download [[[2
 
     - name: Download requested application files
@@ -160,7 +144,7 @@
              | sha256sum --check --status
       args:
         chdir: '{{ hashicorp__src + "/" + item + "/" + hashicorp__combined_version_map[item] }}'
-        executable: '/bin/bash'
+        executable: 'bash'
       with_items: '{{ (hashicorp__applications + hashicorp__dependent_applications) | unique }}'
       register: hashicorp__register_hash
       changed_when: False
@@ -177,7 +161,9 @@
                  item + "_" + hashicorp__combined_version_map[item] + "_" + hashicorp__tar_suffix }}'
         dest: '{{ hashicorp__lib + "/" + item + "/" + hashicorp__combined_version_map[item] }}'
         creates: '{{ hashicorp__lib + "/" + item + "/" + hashicorp__combined_version_map[item] + "/" +
-                     ((hashicorp__combined_binary_map[item] if hashicorp__combined_binary_map[item] is string else hashicorp__combined_binary_map[item]|first)
+                     ((hashicorp__combined_binary_map[item]
+                       if hashicorp__combined_binary_map[item] is string
+                       else hashicorp__combined_binary_map[item]|first)
                       if hashicorp__combined_binary_map[item]|d() else item) }}'
       with_items: '{{ (hashicorp__applications + hashicorp__dependent_applications) | unique }}'
       register: hashicorp__register_unpack
@@ -189,7 +175,8 @@
         src: '{{ hashicorp__src + "/" + item + "/" + hashicorp__combined_version_map[item] + "/" +
                  item + "_" + hashicorp__combined_version_map[item] + "_" + hashicorp__consul_webui_suffix }}'
         dest: '{{ hashicorp__lib + "/" + item + "/" + hashicorp__combined_version_map[item] + "/web_ui" + "/" }}'
-        creates: '{{ hashicorp__lib + "/" + item + "/" + hashicorp__combined_version_map[item] + "/web_ui/index.html" }}'
+        creates: '{{ hashicorp__lib + "/" + item + "/"
+                     + hashicorp__combined_version_map[item] + "/web_ui/index.html" }}'
       with_items: '{{ (hashicorp__applications + hashicorp__dependent_applications) | unique }}'
       register: hashicorp__register_unpack_webui
       when: hashicorp__consul_webui|bool and item == 'consul'
@@ -200,10 +187,13 @@
 
 - name: Install HashiCorp applications
   shell: install --mode 755 --owner root --group root --target-directory {{ hashicorp__bin }}
-         {{ ((hashicorp__combined_binary_map[item.0] if hashicorp__combined_binary_map[item.0] is string else hashicorp__combined_binary_map[item.0] | join(' '))
+         {{ ((hashicorp__combined_binary_map[item.0]
+              if hashicorp__combined_binary_map[item.0] is string
+              else hashicorp__combined_binary_map[item.0] | join(' '))
              if hashicorp__combined_binary_map[item.0]|d() else item.0) }}
          {% if item.0 == 'terraform' %}
-         ; find . -maxdepth 1 -type f -name 'terraform-*' -exec install -m 755 -o root -g root -t {{ hashicorp__bin }} {} +
+         ; find . -maxdepth 1 -type f -name 'terraform-*'
+                  -exec install -m 755 -o root -g root -t {{ hashicorp__bin }} {} +
          {% endif %}
   args:
     chdir: '{{ hashicorp__lib + "/" + item.0 + "/" + hashicorp__combined_version_map[item.0] }}'

@@ -10,6 +10,11 @@
 
   roles:
 
+    - role: debops.keyring
+      tags: [ 'role::keyring', 'skip::keyring', 'role::postgresql_server' ]
+      keyring__dependent_apt_keys:
+        - '{{ postgresql_server__keyring__dependent_apt_keys }}'
+
     - role: debops.apt_preferences
       tags: [ 'role::apt_preferences', 'skip::apt_preferences' ]
       apt_preferences__dependent_list:
@@ -24,6 +29,13 @@
       tags: [ 'role::ferm', 'skip::ferm' ]
       ferm__dependent_rules:
         - '{{ postgresql_server__ferm__dependent_rules }}'
+
+    - role: debops.python
+      tags: [ 'role::python', 'skip::python' ]
+      python__dependent_packages3:
+        - '{{ postgresql_server__python__dependent_packages3 }}'
+      python__dependent_packages2:
+        - '{{ postgresql_server__python__dependent_packages2 }}'
 
     - role: debops.locales
       tags: [ 'role::locales', 'skip::locales' ]

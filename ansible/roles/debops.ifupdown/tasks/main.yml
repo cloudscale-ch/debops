@@ -1,13 +1,36 @@
 ---
 
+- name: Make sure that Ansible local facts directory exists
+  file:
+    path: '/etc/ansible/facts.d'
+    state: 'directory'
+    mode: '0755'
+
+- name: Save ifupdown local facts
+  template:
+    src: 'etc/ansible/facts.d/ifupdown.fact.j2'
+    dest: '/etc/ansible/facts.d/ifupdown.fact'
+    mode: '0755'
+  register: ifupdown__register_facts
+
+- name: Update Ansible facts if they have been modified
+  action: setup
+  when: ifupdown__register_facts is changed
+
 - name: Install required packages
   package:
-    name: '{{ item }}'
+    name: '{{ q("flattened", (ifupdown__base_packages
+                              + ifupdown__dynamic_packages
+                              + ifupdown__packages)) }}'
     state: 'present'
-  with_flattened:
-    - '{{ ifupdown__base_packages }}'
-    - '{{ ifupdown__dynamic_packages }}'
-    - '{{ ifupdown__packages }}'
+  register: ifupdown__register_packages
+  until: ifupdown__register_packages is succeeded
+
+- name: Purge conflicting packages
+  apt:
+    name: '{{ q("flattened", ifupdown__purge_packages) }}'
+    state: 'absent'
+    purge: True
 
 - name: Find netplan configuration
   find:
@@ -22,6 +45,7 @@
 
 - name: Create custom ifupdown systemd services
   include: ifup_systemd.yml
+  when: ansible_service_mgr == 'systemd'
 
 - name: Reset network configuration on role upgrade
   file:
@@ -48,7 +72,10 @@
 
 - name: Remove network interface configuration
   file:
-    dest: '/etc/network/interfaces.config.d/{{ "%03d" | format((ifupdown__interface_weight_map[item.value.weight_class | d(item.value.type | d("default"))] | d("90"))|int + (item.value.weight | d("0"))|int) }}_iface_{{ item.value.iface | d(item.key) }}'
+    dest: '/etc/network/interfaces.config.d/{{ "%03d" | format((ifupdown__interface_weight_map[item.value.weight_class
+                                                                | d(item.value.type | d("default"))] | d("90"))|int
+                                               + (item.value.weight | d("0"))|int) }}_iface_{{ item.value.iface
+                                                                                               | d(item.key) }}'
     state: 'absent'
   with_dict: '{{ ifupdown__combined_interfaces }}'
   register: ifupdown__register_interfaces_removed
@@ -57,7 +84,10 @@
 - name: Generate network interface configuration
   template:
     src: 'etc/network/interfaces.d/iface.j2'
-    dest: '/etc/network/interfaces.config.d/{{ "%03d" | format((ifupdown__interface_weight_map[item.value.weight_class | d(item.value.type | d("default"))] | d("90"))|int + (item.value.weight | d("0"))|int) }}_iface_{{ item.value.iface | d(item.key) }}'
+    dest: '/etc/network/interfaces.config.d/{{ "%03d" | format((ifupdown__interface_weight_map[item.value.weight_class
+                                                                | d(item.value.type | d("default"))] | d("90"))|int
+                                               + (item.value.weight | d("0"))|int) }}_iface_{{ item.value.iface
+                                                                                               | d(item.key) }}'
     owner: 'root'
     group: 'root'
     mode: '{{ item.value.mode | d(0644) }}'
@@ -68,7 +98,10 @@
 - name: Remove unknown interface configuration
   shell: find /etc/network/interfaces.config.d -maxdepth 1 -type f
          -name '*_iface_{{ item.item.value.iface | d(item.item.key) }}'
-         ! -name '{{ "%03d" | format((ifupdown__interface_weight_map[item.item.value.weight_class | d(item.item.value.type | d("default"))] | d("90"))|int + (item.item.value.weight | d("0"))|int) }}_iface_{{ item.item.value.iface | d(item.item.key) }}' -exec rm -vf {} +
+         ! -name '{{ "%03d" | format((ifupdown__interface_weight_map[item.item.value.weight_class
+                                      | d(item.item.value.type | d("default"))] | d("90"))|int
+                     + (item.item.value.weight | d("0"))|int) }}_iface_{{ item.item.value.iface | d(item.item.key) }}'
+         -exec rm -vf {} +
   with_items:
     - '{{ ifupdown__register_interfaces_removed.results }}'
     - '{{ ifupdown__register_interfaces_created.results }}'
@@ -89,8 +122,9 @@
                     item.diff.after.state == "absent")
                 else "changed")) }}
     dest: '{{ "/run/network/debops-ifupdown-reconfigure," +
-              ("%03d" | format(((ifupdown__interface_weight_map[item.item.value.weight_class | d(item.item.value.type | d("default"))]
-               | d(ifupdown__interface_weight_map["default"] | d("90")))|int
+              ("%03d" | format(((ifupdown__interface_weight_map[item.item.value.weight_class
+                                 | d(item.item.value.type | d("default"))]
+                                 | d(ifupdown__interface_weight_map["default"] | d("90")))|int
                + (item.item.value.weight | d("0"))|int)))|string + ","
                + (item.item.value.iface | d(item.item.key)) }}'
     owner: 'root'
@@ -172,22 +206,6 @@
     group: 'root'
     mode: '0755'
   when: not ifupdown__reconfigure_auto | bool
-
-- name: Make sure that Ansible local facts directory exists
-  file:
-    path: '/etc/ansible/facts.d'
-    state: 'directory'
-    owner: 'root'
-    group: 'root'
-    mode: '0755'
-
-- name: Save ifupdown local facts
-  template:
-    src: 'etc/ansible/facts.d/ifupdown.fact.j2'
-    dest: '/etc/ansible/facts.d/ifupdown.fact'
-    owner: 'root'
-    group: 'root'
-    mode: '0755'
 
 - name: Save role version information
   ini_file:

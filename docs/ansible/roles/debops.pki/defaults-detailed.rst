@@ -67,7 +67,38 @@ List of parameters related to the entire PKI realm:
 ``name``
   Required. This is the name of the PKI realm, used as the name of the
   directory which contains the realm subdirectories, by default stored in
-  the :file:`/etc/pki/realms/` directory.
+  the :file:`/etc/pki/realms/` directory. The ``name`` parameter is interpreted
+  by the role in various ways:
+
+    - the single string name, like "domain", "xxxxaaaayyyy" or similar strings.
+      These PKI realm names can be thought of as "handles" and they don't have any
+      impact on the domains stored in the X.509 certificates. The role will
+      by default use the host's FQDN and DNS domain name to generate such realms,
+      but it can be overridden. Users can create multiple such PKI realms for
+      various purposes.
+
+    - the DNS-based name, which contains dots, like "example.com",
+      "host.example.com" and the like. These PKI realms base their X.509 certificates
+      after the realm name by default. This is also the reason the default PKI realm
+      is named "domain" and not "{{ ansible_domain }}" - users can create a new PKI
+      realm for their default DNS domain on hosts that are reachable publicly and
+      they will automatically get the Let's Encrypt certificates when possible, or
+      can easily use external certificates grabbed from some other CA.
+
+      Some DebOps roles like :ref:`debops.nginx` can check the list of available
+      PKI realms via the local facts and use some other PKI realm rather than the
+      default one automatically. For example, if an user creates an "example.com" PKI
+      realm and then uses the "example.com" DNS domain, standalone or with a
+      subdomain like "sub.example.com", the :ref:`debops.nginx` role will check if a
+      PKI realm named after a given FQDN or DNS domain exists and will use it instead
+      of the "domain" PKI realm used by default. It can be thought of as a shortcut
+      to easily manage X.509 certificates for multiple websites, each one with its
+      own FQDN domain name.
+
+    - the mail-based name, like "user@example.org" - any PKI realm name which
+      contains the '@' character qualifies as one. These PKI realms were meant to
+      keep the client certificates used to authenticate to services, but this idea
+      was not developed further, so far.
 
   If the ``subject`` parameter is not specified, ``name`` parameter is checked
   to see if it might be a DNS domain (at least 1 dot present in the value). If
@@ -259,9 +290,16 @@ List of supported parameters (incomplete):
   The X.509 Name Constraints certificate extension to include in certificates
   which will be used during certificate verification to ensure that the CA is
   authorized to issue a certificate for the name in question.
-  The extension is set to critical which REQUIRES X.509 libraries to support it or to return an error.
-  This is done following common recommendations
-  (ref: `Which properties of a X.509 certificate should be critical and which not? <https://security.stackexchange.com/questions/30974/which-properties-of-a-x-509-certificate-should-be-critical-and-which-not>`_).
-  The default is ``True`` which will result in ``critical, permitted;DNS:${config_domain}``.
-  It can be set to ``False`` to not include X.509 Name Constraints in certificates.
-  Any other value (not matching :regexp:`^(?:[Tt]rue|[Ff]alse)$`) will be included as is as X.509 Name Constraint.
+  The default is ``True`` which will result in ``critical, permitted;DNS:${config_domain}``
+  (the 'critical, ' part is omitted when ``item.name_constraints_critical`` is
+  set to ``False``). It can be set to ``False`` to not include X.509 Name
+  Constraints in certificates. Any other value (not matching :regexp:`^(?:[Tt]rue|[Ff]alse)$`)
+  will be included as is as X.509 Name Constraint.
+
+``name_constraints_critical``
+  Boolean, for specifying whether to mark the default Name Constraints
+  extension as critical or not. The default is ``True``. The CA/Browser forum
+  recommends this to be enabled (REQUIRING X.509 libraries to support it or to
+  return an error), but mentions that the extension may be disabled for
+  compatibility reasons
+  (ref: `Baseline Requirements for the Issuance and Management of Publicly-Trusted Certificates (v1.6.4) <https://cabforum.org/wp-content/uploads/CA-Browser-Forum-BR-1.6.4.pdf>`_).

@@ -7,7 +7,7 @@
 # .. contents:: Sections
 #    :local:
 #
-# .. include:: ../../../includes/global.rst
+# .. include:: ../../../../includes/global.rst
 
 
 # General configuration, installation [[[
@@ -18,7 +18,18 @@
 # Enable or disable support for :program:`etckeeper` on a given host. Disabling
 # this option does not remove existing :program:`etckeeper` installation and
 # committing changes via Ansible local facts will be disabled.
-etckeeper__enabled: True
+#
+# The :command:`etckeeper` package will not be installed by default if Python
+# 2.7 environment is not present on the host, to avoid creating it.
+# See :ref:`the role documentation <etckeeper__ref_python3only>` for more
+# details.
+etckeeper__enabled: '{{ True
+                        if (ansible_local|d() and ansible_local.python|d() and
+                            (ansible_local.python.installed2|d())|bool)
+                        else (ansible_local.etckeeper.installed
+                              if (ansible_local|d() and ansible_local.etckeeper|d() and
+                                  ansible_local.etckeeper.installed is defined)
+                              else False) }}'
 
                                                                    # ]]]
 # .. envvar:: etckeeper__installed [[[
@@ -106,7 +117,7 @@ etckeeper__commit_message_fact: 'Committed by Ansible local facts'
 # Version control ignore list [[[
 # -------------------------------
 
-# These list variables define what paths in :file:`/etc` directory should be
+# These list variables define which paths in :file:`/etc` directory should be
 # ignored by :program:`etckeeper`. They will be added in the
 # :file:`/etc/.gitignore` file. See :ref:`etckeeper__ref_gitignore` for more
 # details.
@@ -114,7 +125,7 @@ etckeeper__commit_message_fact: 'Committed by Ansible local facts'
 # .. envvar:: etckeeper__block_marker [[[
 #
 # The string that marks the beginning and end of the section in the
-# :file:`.gitignore` file managed by the ``debops.etckeeper` role. It shouldn't
+# :file:`.gitignore` file managed by the ``debops.etckeeper`` role. It shouldn't
 # be changed once deployed, the ``{mark}`` string is required.
 etckeeper__block_marker: '# {mark} section managed by debops.etckeeper Ansible role'
 
@@ -139,6 +150,17 @@ etckeeper__default_gitignore:
       There is no benefit in tracking Mandos keys and it is a potential security
       vulnerability in case the /etc/ repository is pushed to an external remote.
     ignore: 'keys/mandos/seckey.txt'
+
+  - name: 'borgmatic'
+    comment: |
+      The borgmatic configuration directory can contain sensitive credentials
+      allowing access to backups of the system and potentially other systems as
+      well. debops.borgbackup only stores credentials in
+      `/etc/borgmatic/${config_name}_passphrase.txt` so we only exclude the
+      passphrase files here.
+    ignore: |-
+      borgmatic/*passphrase*
+      borgmatic.d/*passphrase*
 
   - name: 'xorg-conf-backup'
     ignore: 'X11/xorg.conf.backup'

@@ -20,6 +20,16 @@ files in the :file:`/etc/lxc/` directory.
 Examples
 ~~~~~~~~
 
+Select the default bridge interface used by new unprivileged LXC containers:
+
+.. code-block:: yaml
+
+   lxc__configuration:
+
+     - name: 'unprivileged'
+       options:
+         - 'lxc.network.link': 'br0'
+
 Change the default LXC configuration file used to generate LXC containers to
 unprivileged:
 
@@ -105,7 +115,8 @@ specific parameters:
     same name.
 
   ``value``
-    The value of an LXC configuration option, a string.
+    The value of an LXC configuration option, a string or a YAML list of
+    strings which will joined with spaces.
 
   ``comment``
     Option. a string or a YAML text block with a comment added to a given LXC
@@ -194,6 +205,32 @@ overridden template options:
        template: 'debian'
        template_options: ''
 
+Create custom directory on LXC host and share it between two unprivileged LXC
+containers using the :ref:`debops.resources` and :ref:`debops.lxc` roles,
+mounted at :file:`/opt` directory inside of the containers:
+
+.. code-block:: yaml
+
+   resources__host_paths:
+
+     - name: '/srv/shared/lxc-opt'
+       state: 'directory'
+       owner: '100000'
+       group: '100000'
+       mode: '0755'
+
+   lxc__containers:
+
+     - name: 'container1'
+       fstab: |
+         /srv/shared/lxc-opt opt none bind 0 0
+       state: 'started'
+
+     - name: 'container2'
+       fstab: |
+         /srv/shared/lxc-opt opt none bind 0 0
+       state: 'started'
+
 Syntax
 ~~~~~~
 
@@ -256,6 +293,16 @@ manage LXC containers are:
 The parameters below can be used to configure additional aspects of the LXC
 containers when managed by the :ref:`debops.lxc` Ansible role:
 
+``fstab``
+  Optional. YAML text block with :man:`fstab(5)` configuration to mount
+  filesystems inside of the LXC containers. If this parameter is specified, the
+  role will create the :file:`/var/lib/lxc/<container>/fstab` file with the
+  contents of this parameter and configure the container to mount the
+  filesystems specified in this file. Existing LXC containers are not modified.
+
+  See the :man:`lxc.container.conf(5)` ``lxc.mount`` option documentation for
+  more details.
+
 ``ssh``
   Optional, boolean. If ``True``, the role will use the
   :command:`lxc-prepare-ssh` script to configure SSH access and authorized keys
@@ -268,6 +315,13 @@ containers when managed by the :ref:`debops.lxc` Ansible role:
 
   If not specified, the value of :envvar:`lxc__default_container_ssh` will
   determine the SSH status.
+
+``systemd_override``
+  Optional. YAML text block that contains :command:`systemd` unit configuration
+  for a particular LXC container instance. If specified, the configuration will
+  be added or removed depending on the LXC container state. When the
+  :command:`systemd` configuration is changed, the LXC container will be
+  restarted.
 
 ``distribution``
   Optional. Specify the name of the OS distribution to use with the

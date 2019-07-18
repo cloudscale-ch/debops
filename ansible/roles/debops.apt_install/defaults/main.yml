@@ -7,7 +7,7 @@
 # .. contents:: Sections
 #    :local:
 #
-# .. include:: ../../../includes/global.rst
+# .. include:: ../../../../includes/global.rst
 
 
 # Role configuration [[[
@@ -93,6 +93,17 @@ apt_install__state: '{{ "present"
                         else "latest" }}'
 
                                                                    # ]]]
+# .. envvar:: apt_install__no_kernel_hints [[[
+#
+# Enable or disable configuration of the hints about upgraded kernel requiring
+# a reboot of the host, created by the :command:`needrestart` package.  By
+# default these hints will be disabled, which helps with non-interactive APT
+# package installation done by Ansible.
+apt_install__no_kernel_hints: '{{ True
+                                  if ("needrestart" in apt_install__conditional_whitelist_packages)
+                                  else False }}'
+
+                                                                   # ]]]
 # .. envvar:: apt_install__recommends [[[
 #
 # Boolean variable that controls installation of recommended packages.
@@ -112,6 +123,34 @@ apt_install__cache_valid_time: '{{ ansible_local.core.cache_valid_time
                                    if (ansible_local|d() and ansible_local.core|d() and
                                        ansible_local.core.cache_valid_time)
                                    else (60 * 60 * 24 * 7) }}'
+                                                                   # ]]]
+                                                                   # ]]]
+# Debconf package configuration [[[
+# --------------------------------
+
+# These lists can be used to insert new values into the debconf database. This
+# allow to overwrite some default answer before installing a package and avoid
+# using ``dpkg-reconfigure`` to set the wanted answer.
+# See :ref:`apt_install__ref_debconf` for more details.
+
+# .. envvar:: apt_install__debconf [[[
+#
+# List of values to configure for all hosts in the Ansible inventory.
+apt_install__debconf: []
+
+                                                                   # ]]]
+# .. envvar:: apt_install__group_debconf [[[
+#
+# List of values to configure for hosts in specific Ansible
+# inventory group.
+apt_install__group_debconf: []
+
+                                                                   # ]]]
+# .. envvar:: apt_install__host_debconf [[[
+#
+# List of values to configure for specific hosts in the Ansible
+# inventory.
+apt_install__host_debconf: []
                                                                    # ]]]
                                                                    # ]]]
 # APT package lists [[[
@@ -141,7 +180,6 @@ apt_install__base_packages:
 # Command line creature comforts, when you need to login to the remote host.
 apt_install__shell_packages:
   - 'ncurses-term'
-  - 'zsh'
   - 'tmux'
   - 'less'
   - 'file'

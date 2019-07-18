@@ -10,6 +10,15 @@
 
   roles:
 
+    - role: debops.keyring
+      tags: [ 'role::keyring', 'skip::keyring',
+              'role::postgresql', 'role::nginx', 'role::netbox' ]
+      keyring__dependent_apt_keys:
+        - '{{ postgresql__keyring__dependent_apt_keys }}'
+        - '{{ nginx__keyring__dependent_apt_keys }}'
+      keyring__dependent_gpg_keys:
+        - '{{ netbox__keyring__dependent_gpg_keys }}'
+
     - role: debops.apt_preferences
       tags: [ 'role::apt_preferences', 'skip::apt_preferences' ]
       apt_preferences__dependent_list:
@@ -37,6 +46,19 @@
         - '{{ netbox__postgresql__dependent_databases }}'
       postgresql__dependent_pgpass:
         - '{{ netbox__postgresql__dependent_pgpass }}'
+
+    - role: debops.python
+      tags: [ 'role::python', 'skip::python', 'role::gunicorn', 'role::netbox' ]
+      python__dependent_packages3:
+        - '{{ gunicorn__python__dependent_packages3 }}'
+        - '{{ netbox__python__dependent_packages3 }}'
+        - '{{ nginx__python__dependent_packages3 }}'
+        - '{{ postgresql__python__dependent_packages3 }}'
+      python__dependent_packages2:
+        - '{{ gunicorn__python__dependent_packages2 }}'
+        - '{{ netbox__python__dependent_packages2 }}'
+        - '{{ nginx__python__dependent_packages2 }}'
+        - '{{ postgresql__python__dependent_packages2 }}'
 
     - role: debops.gunicorn
       tags: [ 'role::gunicorn', 'skip::gunicorn' ]

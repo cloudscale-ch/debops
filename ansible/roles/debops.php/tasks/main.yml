@@ -13,13 +13,20 @@
   check_mode: False
 
 - name: Install PHP packages
-  apt:
-    name: '{{ item }}'
+  package:
+    name: '{{ q("flattened", php__register_filtered_packages.stdout.strip().splitlines()) }}'
     state: 'present'
-    install_recommends: False
-  with_flattened:
-    - '{{ php__register_filtered_packages.stdout.strip().splitlines() }}'
+  register: php__register_packages
+  until: php__register_packages is succeeded
   notify: [ 'Restart php-fpm' ]
+
+- name: Install PHP Composer from upstream
+  get_url:
+    url: '{{ php__composer_upstream_url }}'
+    dest: '{{ php__composer_upstream_dest }}'
+    checksum: '{{ php__composer_upstream_checksum }}'
+    mode: '0755'
+  when: php__composer_upstream_enabled|bool
 
 - name: Ensure older PHP packages are absent on reset
   include: 'packages_absent_for_version.yml'
@@ -55,6 +62,8 @@
     owner: 'root'
     group: 'root'
     mode: '0440'
+  when: (ansible_local|d() and ansible_local.sudo|d() and
+         (ansible_local.sudo.installed|d())|bool)
 
                                                                    # ]]]
 # php.ini management [[[
@@ -96,7 +105,7 @@
   script: script/php-synchronize-config.sh {{ php__version }}
   register: php__register_synchronize_config
   changed_when: php__register_synchronize_config.stdout is defined and
-                php__register_synchronize_config.stdout != ''
+                php__register_synchronize_config.stdout|d()
   notify: [ 'Restart php-fpm' ]
   tags: [ 'role::php:config' ]
 
@@ -106,7 +115,10 @@
 - name: Check current PHP-FPM diversions
   environment:
     LC_ALL: 'C'
-  shell: dpkg-divert --list '{{ php__etc_base + "/fpm/*" }}' | awk '{print $NF}'
+  shell: set -o nounset -o pipefail -o errexit &&
+         dpkg-divert --list '{{ php__etc_base + "/fpm/*" }}' | awk '{print $NF}' || true
+  args:
+    executable: 'bash'
   register: php__register_diversions
   check_mode: False
   changed_when: False

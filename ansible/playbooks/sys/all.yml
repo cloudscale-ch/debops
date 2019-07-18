@@ -1,5 +1,7 @@
 ---
 
+- import_playbook: mount.yml
+
 - import_playbook: netbase.yml
 
 - import_playbook: sysnews.yml
@@ -18,12 +20,14 @@
 
 - import_playbook: gitusers.yml
 
-- import_playbook: sftpusers.yml
-
 - import_playbook: slapd.yml
+
+- import_playbook: nslcd.yml
 
 - import_playbook: iscsi.yml
 
 - import_playbook: cryptsetup.yml
 
 - import_playbook: persistent_paths.yml
+
+- import_playbook: neurodebian.yml

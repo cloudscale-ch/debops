@@ -32,14 +32,20 @@
 - name: Bootstrap Python support on a host
   hosts: [ 'debops_all_hosts', 'debops_service_bootstrap' ]
   gather_facts: False
+  become: True
 
   roles:
 
     - role: debops.python/raw
+      tags: [ 'role::python_raw', 'skip::python_raw', 'role::python' ]
+
+
+- import_playbook: 'service/core.yml'
 
 
 - name: Bootstrap host for Ansible management
   hosts: [ 'debops_all_hosts', 'debops_service_bootstrap' ]
+  become: True
 
   environment: '{{ inventory__environment | d({})
                    | combine(inventory__group_environment | d({}))
@@ -47,8 +53,14 @@
 
   roles:
 
+    - role: debops.apt
+      tags: [ 'role::apt', 'skip::apt' ]
+
     - role: debops.python
       tags: [ 'role::python', 'skip::python' ]
+
+    - role: debops.netbase
+      tags: [ 'role::netbase', 'skip::netbase' ]
 
     - role: debops.sudo
       tags: [ 'role::sudo', 'skip::sudo', 'role::system_groups' ]
@@ -56,5 +68,5 @@
     - role: debops.system_groups
       tags: [ 'role::system_groups', 'skip::system_groups' ]
 
-    - role: debops.bootstrap
-      tags: [ 'role::bootstrap', 'skip::bootstrap' ]
+    - role: debops.system_users
+      tags: [ 'role::system_users', 'skip::system_users' ]

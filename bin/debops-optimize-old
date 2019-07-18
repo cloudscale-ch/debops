@@ -143,7 +143,7 @@ git ls-files -z | xargs --null -I '{}' find '{}' -type f -regextype posix-extend
 
 git ls-files -z | xargs --null -I '{}' find '{}' -type f -regextype posix-extended -regex '(meta/.*\.yml)$' -print0 | \
     xargs --null --no-run-if-empty sed --in-place --regexp-extended '
-        s#(GNU General Public License v3|GPLv3)#GPL-3.0#;
+        s#(GNU General Public License v3|GPLv3)#GPL-3.0-only#;
         s#categories:#galaxy_tags:#;
     '
 
@@ -233,7 +233,7 @@ fi
 ## If you can’t handle Unicode, that’s your problem. Deal with it!
 
 sed --in-place --regexp-extended "
-        s/^\* /- /;
+        s/^\\* /- /;
     " CHANGES.rst
 
 # Ensure normal files are not executable.
@@ -244,13 +244,13 @@ git ls-files -z | xargs --null -I '{}' find '{}' -type f -executable -regextype 
 ## Also in preparation for: https://github.com/debops/docs/issues/212
 git ls-files -z | xargs --null -I '{}' find '{}' -type f -regextype posix-extended -regex '(defaults/.*\.yml|.*\.rst)$' -print0 | \
     xargs --null sed --in-place --regexp-extended "
-            s/\b${role_full_name}_\b/\`\`${role_full_name}\`\`/g;
+            s/\\b${role_full_name}_\\b/\`\`${role_full_name}\`\`/g;
         "
 
 ## Revert a change for deprecated roles (might be removed from the documentation at some point) or falsely detected roles.
 git ls-files -z | xargs --null -I '{}' find '{}' -type f -regextype posix-extended -regex '(defaults/.*\.yml|.*\.rst)$' -print0 | \
     xargs --null sed --in-place --regexp-extended "
-            s/\b(debops\.(php5|sshkeys|cfg|subnetwork)|ypid\.(crypttab|gdm|snapshot_snapper|kernel_module|linuxmuster_net-client-epoptes_via_postsync|linuxmuster_net-server-epoptes_via_postsync))_\b/\`\`\1\`\`/g;
+            s/\\b(debops\\.(php5|sshkeys|cfg|subnetwork)|ypid\\.(crypttab|gdm|snapshot_snapper|kernel_module|linuxmuster_net-client-epoptes_via_postsync|linuxmuster_net-server-epoptes_via_postsync))_\\b/\`\`\\1\`\`/g;
         "
 
 ## Revert other changes.

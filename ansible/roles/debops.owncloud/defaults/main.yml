@@ -4,8 +4,8 @@
 # Default variables
 # =================
 
-# .. include:: ../../../includes/global.rst
-# .. include:: includes/role.rst
+# .. include:: ../../../../includes/global.rst
+# .. include:: ../includes/role.rst
 
 # .. contents:: Sections
 #    :local:
@@ -48,7 +48,7 @@ owncloud__base_packages:
 # .. envvar:: owncloud__required_php_packages
 #
 # List of PHP packages required by Nextcloud.
-# Refer to the `official Nextcloud documentation <https://docs.nextcloud.com/server/11/admin_manual/installation/source_installation.html>`__ for details.
+# Refer to the `official Nextcloud documentation <https://docs.nextcloud.com/server/stable/admin_manual/installation/source_installation.html#prerequisites-for-manual-installation>`__ for details.
 owncloud__required_php_packages:
   # Included in base install:
   # - 'ctype'
@@ -64,20 +64,17 @@ owncloud__required_php_packages:
   # - 'SimpleXML'
   # - 'XMLWriter'
 
-  - 'mbstring'
   # - 'posix'
-  - 'zip'
   # - 'zlib'
 
 
 # .. envvar:: owncloud__recommended_php_packages
 #
 # List of PHP packages recommended by Nextcloud.
-# Refer to the `official Nextcloud documentation <https://docs.nextcloud.com/server/11/admin_manual/installation/source_installation.html>`__ for details.
+# Refer to the `official Nextcloud documentation <https://docs.nextcloud.com/server/stable/admin_manual/installation/source_installation.html#prerequisites-for-manual-installation>`__ for details.
 owncloud__recommended_php_packages:
   - 'curl'
   - 'bz2'
-  - 'intl'
   - 'mcrypt'
 
   # Recommended/Optional: SFTP storage
@@ -92,11 +89,17 @@ owncloud__base_php_packages:
         if (owncloud__variant == "nextcloud")
         else [] }}'
 
+  - 'mbstring'
+  - 'zip'
+
+  ## Required for the "OpenOTP Two Factor Authentication" (twofactor_rcdevsopenotp) as of NC 14.
+  - 'ldap'
+  - 'soap'
+
   - '{{ [ "apcu" ] if (owncloud__apcu_enabled|bool) else [] }}'
   - '{{ [ "mysql" ] if (owncloud__database in [ "mariadb", "mysql" ]) else [] }}'
   - '{{ [ "pgsql" ] if (owncloud__database in [ "postgresql" ]) else [] }}'
   - '{{ [ "redis" ] if (owncloud__redis_enabled | bool) else [] }}'
-  - '{{ [ "ldap" ] if (owncloud__ldap_enabled | bool) else [] }}'
 
   ## Seems to be required at least for PHP7.0 to fix:
   ## PHP Warning: PHP Startup: Unable to load dynamic library '/usr/lib/php/20151012/redis.so'
@@ -119,7 +122,7 @@ owncloud__optional_php_packages:
   - '{{ owncloud__recommended_php_packages
         if (owncloud__variant == "nextcloud")
         else [] }}'
-
+  - 'intl'
   - 'imagick'
 
 
@@ -176,8 +179,8 @@ owncloud__deploy_state: 'present'
 
 # .. envvar:: owncloud__system_user [[[
 #
-# Name of the system account which will perform signature and archive
-# verification.
+# Name of the system account which will perform archive
+# verification using the OpenPGP signature.
 owncloud__system_user: 'nextcloud'
 
                                                                    # ]]]
@@ -286,14 +289,15 @@ owncloud__dpkg_hook_script: '{{
 # .. envvar:: owncloud__auto_database_upgrade_migration_test
 #
 # Whether database schema migration should be simulated before upgrading the production database.
-# Refer to the `official ownCloud documentation <https://doc.owncloud.org/server/9.0/admin_manual/maintenance/package_upgrade.html#migration-test>`__ for details.
+# For Nextcloud it cannot be configured and this variable is ignored.
+# Refer to the `official ownCloud documentation <https://doc.owncloud.org/server/9.0/admin_manual/maintenance/upgrade.html#migration-test>`__ for details.
 owncloud__auto_database_upgrade_migration_test: True
 
 
 # .. envvar:: owncloud__auto_database_upgrade_3party_app_disable
 #
 # Should third party apps by disabled during/after upgrades? The upstream default as of ownCloud 9.0
-# is ``True``.
+# is ``True``. For Nextcloud it cannot be configured and this variable is ignored.
 owncloud__auto_database_upgrade_3party_app_disable: True
 
 
@@ -413,8 +417,8 @@ owncloud__variant_name_map:
 #
 # * ownCloud ``10.0``
 #
-# * Nextcloud ``12.0``
-# * Nextcloud ``13.0``
+# * Nextcloud ``14.0``
+# * Nextcloud ``15.0``
 #
 # For Nextcloud refer to the `Nextcloud Maintenance and Release Schedule <https://github.com/nextcloud/server/wiki/Maintenance-and-Release-Schedule>`_.
 # and the `Nextcloud Server Changelog <https://nextcloud.com/changelog/>`_.
@@ -423,7 +427,7 @@ owncloud__variant_name_map:
 # and the `package index <https://download.owncloud.org/download/repositories/>`_ for more details.
 owncloud__release: '{{ "10.0"
                        if (owncloud__variant == "owncloud")
-                       else "12.0" }}'
+                       else "14.0" }}'
 
 
 # .. envvar:: owncloud__distribution
@@ -544,6 +548,10 @@ owncloud__temp_path: ''
 # Where the ownCloud instance will be deployed (web root).
 owncloud__deploy_path: '{{ owncloud__app_home }}'
 
+# .. envvar:: owncloud__deploy_path_mode
+#
+# Octal permissions for ownCloud web root.
+owncloud__deploy_path_mode: '0750'
 
 # .. In memory caching [[[1
 #
@@ -721,7 +729,8 @@ owncloud__admin_password: '{{ lookup("password", owncloud__admin_password_path
 # .. envvar:: owncloud__autosetup
 #
 # Should Ansible automatically finish the ownCloud setup on
-# it's own? Disabled if admin_username is set to ``False``.
+# it's own? If this feature is disabled, some of the installation tasks will
+# have to be performed manually by the ownCloud/Nextcloud administrator.
 owncloud__autosetup: True
 
 
@@ -815,8 +824,8 @@ owncloud__role_config:
   'updatechecker': '{{ True if (owncloud__variant in ["nextcloud"]) else False }}'
 
   'memcache.local':
-    state: '{{ "present" if (owncloud__apcu_enabled|bool) else "absent" }}'
-    value: '\\OC\\Memcache\\APCu'
+    state: '{{ "present" if (owncloud__apcu_enabled|bool or owncloud__redis_enabled|bool) else "absent" }}'
+    value: '{{ "\\OC\\Memcache\\Redis" if (owncloud__redis_enabled|bool) else "\\OC\\Memcache\\APCu" }}'
 
   'memcache.locking':
     state: '{{ "present" if (owncloud__redis_enabled|bool) else "absent" }}'
@@ -1747,6 +1756,37 @@ owncloud__apt_preferences__dependent_list_optional:
                else "absent" }}'
 
 
+# .. envvar:: owncloud__keyring__dependent_apt_keys [[[
+#
+# APT key configuration for the :ref:`debops.keyring` Ansible role.
+owncloud__keyring__dependent_apt_keys:
+
+  - id: '{{ owncloud__apt_repo_key_id }}'
+    state: '{{ "present" if (owncloud__variant in ["owncloud"]) else "absent" }}'
+
+    # Old or unused OpenPGP public keys specified by fingerprint which where
+    # previously used to sign the APT repository.
+    # The keys listed here are ensured to be absent to reduce the risk if one of
+    # the keys gets compromised.
+  - id: 'F9EA4996747310AE79474F44977C43A8BA684223'
+    state: 'absent'
+
+  - id: 'BCECA90325B072AB1245F739AB7C32C35180350A'
+    state: 'absent'
+
+                                                                   # ]]]
+# .. envvar:: owncloud__keyring__dependent_gpg_keys [[[
+#
+# GPG key configuration for the :ref:`debops.keyring` Ansible role.
+owncloud__keyring__dependent_gpg_keys:
+
+  - user: '{{ owncloud__system_user }}'
+    group: '{{ owncloud__system_group }}'
+    home: '{{ owncloud__system_home }}'
+    id: '{{ owncloud__upstream_key_fingerprint }}'
+    state: '{{ "present" if (owncloud__variant in ["nextcloud"]) else "absent" }}'
+
+                                                                   # ]]]
 # .. envvar:: owncloud__mariadb__dependent_databases [[[
 #
 # Configuration of the database managed by the :ref:`debops.mariadb` role.
@@ -2013,7 +2053,7 @@ owncloud__nginx__dependent_servers:
           access_log off;
           {% endif %}
 
-      - pattern: '~* \.(?:svg|gif|png|html|ttf|woff|ico|jpg|jpeg)$'
+      - pattern: '~* \.(?:svg|gif|png|html|ttf|woff2?|ico|jpg|jpeg)$'
         options: |
           try_files $uri /index.php$uri$is_args$args;
 

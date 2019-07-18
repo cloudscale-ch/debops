@@ -7,7 +7,7 @@
 # .. contents:: Sections
 #    :local:
 #
-# .. include:: ../../../includes/global.rst
+# .. include:: ../../../../includes/global.rst
 
 
 # APT packages, version [[[
@@ -308,6 +308,21 @@ elasticsearch__jvm_memory_min_heap_size: '{{ (((ansible_memtotal_mb|int
 elasticsearch__jvm_memory_max_heap_size: '{{ elasticsearch__jvm_memory_min_heap_size }}'
                                                                    # ]]]
                                                                    # ]]]
+# Paths [[[
+# ---------
+
+# The variables below configure paths used by Elasticsearch. See
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/path-settings.html
+# for more details.
+
+# .. envvar:: elasticsearch__path_data [[[
+#
+# List of all data paths. They will be created and permissions will be updated if needed.
+elasticsearch__path_data:
+  - '/var/lib/elasticsearch'
+
+                                                                   # ]]]
+                                                                   # ]]]
 # Elasticsearch configuration file [[[
 # ------------------------------------
 
@@ -387,7 +402,7 @@ elasticsearch__default_configuration:
       Elasticsearch performs poorly when the system is swapping the memory.
 
   - name: 'path.data'
-    value: '/var/lib/elasticsearch'
+    value: '{{ elasticsearch__path_data }}'
     comment: |
       Path to directory where to store the data
       (separate multiple locations by comma)
@@ -627,6 +642,28 @@ elasticsearch__etc_services__dependent_list:
 
   - name: 'elasticsearch-tcp'
     port: '{{ elasticsearch__transport_tcp_port }}'
+
+                                                                   # ]]]
+# .. envvar:: elasticsearch__sysctl__dependent_parameters [[[
+#
+# Configuration for the :ref:`debops.sysctl` Ansible role.
+elasticsearch__sysctl__dependent_parameters:
+
+  - name: 'elasticsearch'
+    weight: 80
+    options:
+
+        # This parameter is set by default by the Elasticsearch .deb package,
+        # but this breaks 'sysctl' usage in containers. The original file will
+        # be diverted, and the role will configure the relevant setting for us,
+        # automatically commenting it out inside of a container.
+      - name: 'vm.max_map_count'
+        comment: |
+          Elasticsearch uses a mmapfs directory by default to store its
+          indices. The default operating system limits on mmap counts is likely
+          to be too low, which may result in out of memory exceptions.
+          Ref: https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
+        value: 262144
 
                                                                    # ]]]
 # .. envvar:: elasticsearch__elastic_co__dependent_packages [[[

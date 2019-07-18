@@ -8,7 +8,8 @@ debops.sshd
 
    introduction
    getting-started
-   defaults
+   defaults/main
+   ldap-dit
    copyright
 
 ..

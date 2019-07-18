@@ -5,10 +5,11 @@
 
 - name: Install auth-related packages
   apt:
-    name: '{{ item }}'
-    state: 'latest'
+    name: '{{ auth_packages | flatten }}'
+    state: 'present'
     install_recommends: 'no'
-  with_items: '{{ auth_packages }}'
+  register: auth__register_packages
+  until: auth__register_packages is succeeded
 
 - name: Configure pam_cracklib
   template:
@@ -23,19 +24,6 @@
 - name: Configure PAM password history module
   include: pam_pwhistory.yml
   when: auth_pwhistory_remember is defined and auth_pwhistory_remember
-
-- name: Check if /etc/ldap exists
-  stat:
-    path: '/etc/ldap'
-  register: auth_register_etc_ldap
-
-- include: etc_ldap_conf.yml
-  when: ((auth_ldap_conf|bool) and
-         ((auth_register_etc_ldap.stat.exists) or
-          ('ldap' in auth_nsswitch)))
-
-- include: nss_pam_ldap.yml
-  when: (('ldap' in auth_nsswitch) and (auth_nslcd_conf|bool))
 
 - name: DebOps post_tasks hook
   include: "{{ lookup('task_src', 'auth/post_main.yml') }}"

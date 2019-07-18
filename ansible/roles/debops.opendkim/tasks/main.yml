@@ -2,18 +2,19 @@
 
 - name: Install OpenDKIM support
   package:
-    name: '{{ item }}'
+    name: '{{ q("flattened", (opendkim__base_packages
+                              + opendkim__packages)) }}'
     state: 'present'
-  with_flattened:
-    - '{{ opendkim__base_packages }}'
-    - '{{ opendkim__packages }}'
+  register: opendkim__register_packages
+  until: opendkim__register_packages is succeeded
   notify: [ 'Check opendkim and restart' ]
   when: ansible_pkg_mgr == 'apt'
 
 - name: Divert original OpenDKIM configuration
-  command: dpkg-divert --quiet --local --divert /etc/opendkim.conf.dpkg-divert --rename /etc/opendkim.conf
+  command: dpkg-divert --quiet --local --divert {{ item }}.dpkg-divert --rename {{ item }}
   args:
-    creates: '/etc/opendkim.conf.dpkg-divert'
+    creates: '{{ item }}.dpkg-divert'
+  loop: [ '/etc/opendkim.conf', '/etc/default/opendkim' ]
   when: ansible_pkg_mgr == 'apt'
 
 - name: Make sure Ansible local facts directory exists
@@ -37,13 +38,20 @@
   action: setup
   when: opendkim__register_facts is changed
 
-- name: Generate OpenDKIM configuration
+- name: Generate OpenDKIM configuration from /etc
   template:
     src: 'etc/opendkim.conf.j2'
     dest: '/etc/opendkim.conf'
     owner: 'root'
     group: '{{ opendkim__group }}'
     mode: '0640'
+  notify: [ 'Check opendkim and reload' ]
+
+- name: Generate OpenDKIM configuration from /etc/default
+  template:
+    src: 'etc/default/opendkim.j2'
+    dest: '/etc/default/opendkim'
+    mode: '0644'
   notify: [ 'Check opendkim and reload' ]
 
 - name: Ensure that opendkim.service.d directory exists
@@ -55,7 +63,7 @@
     mode: '0755'
   when: (ansible_service_mgr == 'systemd' and
          ansible_distribution_release not in
-         [ 'wheezy', 'jessie', 'precise', 'trusty', 'xenial' ])
+         [ 'wheezy', 'jessie', 'precise', 'trusty', 'xenial', 'bionic' ])
 
 - name: Fix OpenDKIM issues with systemd
   template:
@@ -65,16 +73,17 @@
     group: 'root'
     mode: '0644'
   register: opendkim__register_pid_socket
-  when: (ansible_service_mgr == 'systemd' and
-         ansible_distribution_release not in
-         [ 'wheezy', 'jessie', 'precise', 'trusty', 'xenial' ])
-
-- name: Update systemd runtime configuration
-  command: systemctl daemon-reload
   notify: [ 'Check opendkim and reload' ]
   when: (ansible_service_mgr == 'systemd' and
          ansible_distribution_release not in
-         [ 'wheezy', 'jessie', 'precise', 'trusty', 'xenial' ] and
+         [ 'wheezy', 'jessie', 'precise', 'trusty', 'xenial', 'bionic' ])
+
+- name: Update systemd runtime configuration
+  systemd:
+    daemon_reload: True
+  when: (ansible_service_mgr == 'systemd' and
+         ansible_distribution_release not in
+         [ 'wheezy', 'jessie', 'precise', 'trusty', 'xenial', 'bionic' ] and
          opendkim__register_pid_socket is changed)
 
 - name: Ensure that DomainKey directory exists
@@ -149,6 +158,6 @@
     state: 'directory'
     owner: '{{ opendkim__user }}'
     group: '{{ opendkim__postfix_group }}'
-    mode: '2750'
+    mode: '02750'
   when: opendkim__postfix_integration|bool
   notify: [ 'Check opendkim and restart' ]

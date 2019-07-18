@@ -7,7 +7,7 @@
 # .. contents:: Sections
 #    :local:
 #
-# .. include:: ../../../includes/global.rst
+# .. include:: ../../../../includes/global.rst
 
 
 # APT packages [[[
@@ -634,6 +634,16 @@ mosquitto__etc_services__dependent_list:
   - name: 'secure-mqtt'
     port: '8883'
     comment: 'Secure MQTT'
+
+                                                                   # ]]]
+# .. envvar:: mosquitto__keyring__dependent_apt_keys [[[
+#
+# Configuration for the :ref:`debops.keyring` Ansible role.
+mosquitto__keyring__dependent_apt_keys:
+
+  - id: '{{ mosquitto__upstream_key_id }}'
+    repo: '{{ mosquitto__upstream_repository[ansible_distribution] }}'
+    state: '{{ "present" if mosquitto__upstream|bool else "absent" }}'
 
                                                                    # ]]]
 # .. envvar:: mosquitto__tcpwrappers__dependent_allow [[[

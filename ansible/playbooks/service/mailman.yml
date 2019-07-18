@@ -10,6 +10,11 @@
 
   roles:
 
+    - role: debops.keyring
+      tags: [ 'role::keyring', 'skip::keyring', 'role::nginx' ]
+      keyring__dependent_apt_keys:
+        - '{{ nginx__keyring__dependent_apt_keys }}'
+
     - role: debops.postfix/env
       tags: [ 'role::postfix', 'role::secret', 'role::ferm' ]
 
@@ -38,6 +43,13 @@
       ferm__dependent_rules:
         - '{{ postfix__ferm__dependent_rules }}'
         - '{{ nginx__ferm__dependent_rules }}'
+
+    - role: debops.python
+      tags: [ 'role::python', 'skip::python' ]
+      python__dependent_packages3:
+        - '{{ nginx__python__dependent_packages3 }}'
+      python__dependent_packages2:
+        - '{{ nginx__python__dependent_packages2 }}'
 
     - role: debops.postfix
       tags: [ 'role::postfix', 'skip::postfix' ]

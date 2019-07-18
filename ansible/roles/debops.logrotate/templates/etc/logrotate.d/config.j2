@@ -34,46 +34,53 @@
 {%     endif %}
 {%     if section.options|d() %}
 {%       if section.log|d() or section.logs|d() %}
-{{ section.options | indent(4, true) }}
+{{ section.options | regex_replace('\n$','') | indent(4, true) }}
 {%       else %}
-{{ section.options }}
+{{ section.options | regex_replace('\n$','') }}
 {%       endif %}
 {%     endif %}
 {%     if section.log|d() or section.logs|d() %}
 {%       if section.firstaction|d() %}
     firstaction
-{{ section.firstaction | indent(8, true) }}
+{{ section.firstaction | regex_replace('\n$','') | indent(8, true) }}
     endscript
 {%       endif %}
 {%       if section.prerotate|d() %}
     prerotate
-{{ section.prerotate | indent(8, true) }}
+{{ section.prerotate | regex_replace('\n$','') | indent(8, true) }}
     endscript
 {%       endif %}
 {%       if section.postrotate|d() %}
+
     postrotate
-{{ section.postrotate | indent(8, true) }}
+{{ section.postrotate | regex_replace('\n$','') | indent(8, true) }}
     endscript
 {%       endif %}
 {%       if section.preremove|d() %}
     preremove
-{{ section.preremove | indent(8, true) }}
+{{ section.preremove | regex_replace('\n$','') | indent(8, true) }}
     endscript
 {%       endif %}
 {%       if section.lastaction|d() %}
     lastaction
-{{ section.lastaction | indent(8, true) }}
+{{ section.lastaction | regex_replace('\n$','') | indent(8, true) }}
     endscript
 {%       endif %}
 }
 {%     endif %}
 {%   endif %}
-
 {% endmacro %}
 {% if item.sections|d() %}
 {%   for section in item.sections %}
-{{ print_config(section) -}}
+{%     if (section.log|d() or section.logs|d() or section.filename|d()) and section.state|d('present') != 'absent' %}
+{{ print_config(section) | regex_replace('\n$','') }}
+{%       if not loop.last %}
+
+{%       endif %}
+{%     endif %}
 {%   endfor %}
 {% else %}
-{{ print_config(item) -}}
+{%   if (item.log|d() or item.logs|d() or item.filename|d()) and item.state|d('present') != 'absent' %}
+{{ print_config(item) | regex_replace('\n$','') }}
+{%   endif %}
 {% endif %}

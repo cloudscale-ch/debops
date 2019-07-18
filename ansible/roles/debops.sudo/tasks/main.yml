@@ -1,12 +1,21 @@
 ---
 
+- name: Configure access to LDAP directory
+  template:
+    src: 'etc/sudo-ldap.conf.j2'
+    dest: '/etc/sudo-ldap.conf'
+    mode: '0440'
+  when: sudo__enabled|bool and sudo__ldap_enabled|bool
+
 - name: Install required packages
+  environment:
+    SUDO_FORCE_REMOVE: 'yes'
   package:
-    name: '{{ item }}'
+    name: '{{ q("flattened", (sudo__base_packages
+                              + sudo__packages)) }}'
     state: 'present'
-  with_flattened:
-    - '{{ sudo__base_packages }}'
-    - '{{ sudo__packages }}'
+  register: sudo__register_packages
+  until: sudo__register_packages is succeeded
   when: sudo__enabled|bool
 
 - name: Ensure that '/etc/sudoers' includes '/etc/sudoers.d'

@@ -1,48 +1,21 @@
 ---
 
-- name: Get upstream APT GPG key
-  apt_key:
-    id: '{{ nodejs__upstream_key_id }}'
-    keyserver: '{{ ansible_local.core.keyserver
-                   if (ansible_local|d() and ansible_local.core|d() and
-                       ansible_local.core.keyserver)
-                   else "hkp://pool.sks-keyservers.net" }}'
-    state: 'present'
-  when: nodejs__upstream|bool
-
-- name: Configure upstream APT repository
-  apt_repository:
-    repo: '{{ nodejs__upstream_repository }}'
-    state: 'present'
-    update_cache: True
-  when: nodejs__upstream|bool
-
-- name: Add upstream Yarn APT repository GPG key
-  apt_key:
-    id: '{{ nodejs__yarn_upstream_key_id }}'
-    state: 'present'
-    keyserver: '{{ ansible_local.core.keyserver
-                   if (ansible_local|d() and ansible_local.core|d() and
-                       ansible_local.core.keyserver)
-                   else "hkp://pool.sks-keyservers.net" }}'
-  when: nodejs__yarn_upstream|bool
-
-- name: Add upstream Yarn APT repository
-  apt_repository:
-    repo: '{{ nodejs__yarn_upstream_repository }}'
-    state: 'present'
-    update_cache: True
-  when: nodejs__yarn_upstream|bool
-
 - name: Ensure that the distribution 'npm' package is uninstalled
   package:
     name: 'npm'
     state: 'absent'
+  register: nodejs__register_purge_npm
+  until: nodejs__register_purge_npm is succeeded
   when: nodejs__npm_git_enabled|bool
 
 - name: Install APT packages
   package:
-    name: '{{ item }}'
+    name: '{{ q("flattened", (nodejs__base_packages
+                              + nodejs__distribution_packages
+                              + nodejs__packages
+                              + nodejs__group_packages
+                              + nodejs__host_packages
+                              + nodejs__dependent_packages)) }}'
     state: '{{ "latest"
                if (nodejs__upstream | bool and
                    (ansible_local|d() and ansible_local.nodejs|d() and
@@ -55,13 +28,8 @@
                          ansible_local.nodejs.upstream is defined and
                          not ansible_local.nodejs.upstream|bool))
                     else omit }}'
-  with_flattened:
-    - '{{ nodejs__base_packages }}'
-    - '{{ nodejs__distribution_packages }}'
-    - '{{ nodejs__packages }}'
-    - '{{ nodejs__group_packages }}'
-    - '{{ nodejs__host_packages }}'
-    - '{{ nodejs__dependent_packages }}'
+  register: nodejs__register_packages
+  until: nodejs__register_packages is succeeded
 
 - name: Clone NPM repository
   git:

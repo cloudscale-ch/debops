@@ -4,6 +4,27 @@ Getting started
 .. contents::
    :local:
 
+.. _etckeeper__ref_python3only:
+
+etckeeper disabled in Python3-only environment
+----------------------------------------------
+
+At the moment, :command:`etckeeper` package in Debian `depends on Python 2.7`__
+to work, due to the :command:`bzr` command `not yet ported to Python 3.x`__.
+To avoid installation of Python 2.7 environment in Python 3.x-only
+environments, the :command:`etckeeper` installation will be disabled by default
+if the Python 2.7 environment is not already installed and detected by the
+:ref:`debops.python` Ansible role.
+
+.. __: https://bugs.debian.org/906000
+.. __: https://bugs.debian.org/883146
+
+You can override this behaviour by setting the :envvar:`etckeeper__enabled`
+variable to ``True`` explicitly in the Ansible inventory. Alternatively, ensure
+that the Python 2.7 environment is enabled by :ref:`debops.python` by setting
+the :envvar:`python__v2` variable to ``True``.
+
+
 Initial configuration
 ---------------------
 
@@ -15,14 +36,14 @@ a host in mind. This can be done for example via Debian Preseeding or LXC
 template installing and pre-configuring :command:`etckeeper`; the role will
 keep the already existing configuration without any changes if the variables
 are not overwritten through the Ansible inventory. Any changes in the
-:file:`/etc/`` directory will be automatically committed by Ansible local facts
+:file:`/etc/` directory will be automatically committed by Ansible local facts
 before Ansible role execution.
 
 
 Example inventory
 -----------------
 
-The ``debops.etckeeper`` role is part of the default DebOps playbook an run on
+The ``debops.etckeeper`` role is part of the default DebOps playbook and run on
 all hosts which are part of the ``[debops_all_hosts]`` group. To use this role
 with DebOps it's therefore enough to add your host to the mentioned host group
 (which most likely it is already):

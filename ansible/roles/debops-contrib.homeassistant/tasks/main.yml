@@ -3,9 +3,10 @@
 
 - name: Ensure specified packages are in there desired state
   package:
-    name: '{{ item }}'
+    name: '{{ q("flattened", homeassistant__combined_packages) }}'
   when: (homeassistant__deploy_state == "present")
-  with_flattened: '{{ homeassistant__combined_packages }}'
+  register: homeassistant__register_packages
+  until: homeassistant__register_packages is succeeded
   tags: [ 'role::homeassistant:pkgs' ]
 
 # System user and group [[[
@@ -48,7 +49,7 @@
     extra_args: '--user --upgrade'
   become: True
   become_user: '{{ homeassistant__user }}'
-  when: homeassistant__virtualenv == False and homeassistant__register_git is changed
+  when: not homeassistant__virtualenv|bool and homeassistant__register_git is changed
   notify: [ 'Restart Home Assistant' ]
 
 - name: Install hass in virtualenv
@@ -60,7 +61,7 @@
     virtualenv_python: 'python3'
   become: True
   become_user: '{{ homeassistant__user }}'
-  when: homeassistant__virtualenv == True and homeassistant__register_git is changed
+  when: homeassistant__virtualenv|bool and homeassistant__register_git is changed
   notify: [ 'Restart Home Assistant' ]
 
 - name: Ensure Home Assistant config dir exists

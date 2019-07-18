@@ -32,7 +32,7 @@ etc.
 - :ref:`debops.owncloud`
 - :ref:`debops.prosody`
 - :ref:`debops.rstudio_server`
-- ``debops.phpipam``
+- :ref:`debops.phpipam`
 - ``debops.phpmyadmin``
 - ``debops-contrib.foodsoft``
 - ``debops-contrib.homeassistant``
@@ -53,13 +53,14 @@ methods.
 - :ref:`debops.golang`
 - :ref:`debops.hashicorp` - `HashiCorp`_ applications
 - :ref:`debops.java`
+- :ref:`debops.neurodebian`
 - :ref:`debops.nodejs`
 - :ref:`debops.php`
 - :ref:`debops.python`
 - :ref:`debops.ruby`
+- :ref:`debops.wpcli`
 - ``debops.hwraid``
 - ``debops.rails_deploy``
-- ``debops-contrib.neurodebian``
 
 
 Application services
@@ -76,6 +77,7 @@ are not accessed directly by end users.
 - :ref:`debops.fcgiwrap`
 - :ref:`debops.freeradius`
 - :ref:`debops.gunicorn`
+- :ref:`debops.ldap`
 - :ref:`debops.memcached`
 - :ref:`debops.mosquitto`
 - :ref:`debops.rabbitmq_management`
@@ -100,6 +102,7 @@ Databases
 ---------
 
 - :ref:`debops.elasticsearch`
+- :ref:`debops.ldap`
 - :ref:`debops.mariadb`
 - :ref:`debops.mariadb_server`
 - :ref:`debops.postgresql`
@@ -108,6 +111,15 @@ Databases
 - :ref:`debops.redis_sentinel`
 - :ref:`debops.slapd`
 - ``debops.phpmyadmin``
+
+
+Directory services
+------------------
+
+- :ref:`debops.ldap`
+- :ref:`debops.nslcd`
+- :ref:`debops.nsswitch`
+- :ref:`debops.slapd`
 
 
 Encryption
@@ -127,6 +139,7 @@ other hosts.
 - :ref:`debops.cryptsetup`
 - :ref:`debops.iscsi`
 - :ref:`debops.lvm`
+- :ref:`debops.mount`
 - :ref:`debops.nfs`
 - :ref:`debops.nfs_server`
 - :ref:`debops.persistent_paths`
@@ -142,7 +155,6 @@ other hosts.
 Host provisioning
 -----------------
 
-- :ref:`debops.bootstrap`
 - :ref:`debops.grub`
 - :ref:`debops.ipxe`
 - :ref:`debops.preseed`
@@ -228,6 +240,7 @@ packages.
 - :ref:`debops.apt_preferences`
 - :ref:`debops.apt_proxy`
 - :ref:`debops.debops_legacy`
+- :ref:`debops.keyring`
 - :ref:`debops.unattended_upgrades`
 - ``debops.reprepro``
 
@@ -240,10 +253,13 @@ Security
 - :ref:`debops.fail2ban`
 - :ref:`debops.ferm`
 - :ref:`debops.freeradius`
+- :ref:`debops.keyring`
+- :ref:`debops.pam_access`
 - :ref:`debops.proc_hidepid`
 - :ref:`debops.sshd`
 - :ref:`debops.sudo`
 - :ref:`debops.system_groups`
+- :ref:`debops.system_users`
 - :ref:`debops.tcpwrappers`
 - ``debops-contrib.apparmor``
 - ``debops-contrib.firejail``
@@ -259,12 +275,17 @@ System configuration
 - :ref:`debops.etc_services`
 - :ref:`debops.etckeeper`
 - :ref:`debops.ferm`
+- :ref:`debops.keyring`
+- :ref:`debops.ldap`
 - :ref:`debops.locales`
 - :ref:`debops.logrotate`
 - :ref:`debops.machine`
+- :ref:`debops.mount`
 - :ref:`debops.netbase`
+- :ref:`debops.nslcd`
 - :ref:`debops.nsswitch`
 - :ref:`debops.ntp`
+- :ref:`debops.pam_access`
 - :ref:`debops.resources`
 - :ref:`debops.root_account`
 - :ref:`debops.swapfile`
@@ -272,10 +293,11 @@ System configuration
 - :ref:`debops.sysfs`
 - :ref:`debops.sysnews`
 - :ref:`debops.system_groups`
+- :ref:`debops.system_users`
 - :ref:`debops.users`
+- :ref:`debops.yadm`
 - ``debops.console``
 - ``debops.gitusers``
-- ``debops.sftpusers``
 
 
 Web services
@@ -292,13 +314,13 @@ Web services
 Virtualization
 --------------
 
-- :ref:`debops.docker`
 - :ref:`debops.docker_gen`
+- :ref:`debops.docker_registry`
+- :ref:`debops.docker_server`
 - :ref:`debops.libvirt`
 - :ref:`debops.libvirtd`
 - :ref:`debops.libvirtd_qemu`
 - :ref:`debops.lxc`
-- ``debops.openvz``
 
 
 Ansible internals
@@ -310,4 +332,5 @@ additional functions to other roles.
 - :ref:`debops.ansible_plugins`
 - :ref:`debops.core`
 - :ref:`debops.debops_fact`
+- :ref:`debops.keyring`
 - :ref:`debops.secret`

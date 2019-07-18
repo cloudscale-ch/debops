@@ -7,7 +7,7 @@
 # .. contents:: Sections
 #    :local:
 #
-# .. include:: ../../../includes/global.rst
+# .. include:: ../../../../includes/global.rst
 
 
 # General configuration [[[
@@ -32,12 +32,6 @@ postscreen__deploy_state: 'present'
 # List of whitelist/blacklist entries that should be present on all hosts in
 # the Ansible inventory.
 postscreen__access: []
-
-#  - '172.16.32.0/19'
-
-  #  - name: '192.168.0.0/24'
-  #    action: 'reject'
-  #    comment: 'Mamma mia!'
 
                                                                    # ]]]
 # .. envvar:: postscreen__group_access [[[

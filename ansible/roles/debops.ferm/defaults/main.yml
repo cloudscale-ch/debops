@@ -7,7 +7,7 @@
 # .. contents:: Sections
 #    :local:
 #
-# .. include:: ../../../includes/global.rst
+# .. include:: ../../../../includes/global.rst
 
 
 # ferm configuration [[[
@@ -15,17 +15,13 @@
 
 # .. envvar:: ferm__enabled [[[
 #
-# Enable or disable :command:`iptables` management by checking if ``cap_sys_admin``
+# Enable or disable :command:`iptables` management by checking if ``cap_net_admin``
 # POSIX capability is set on the host.
 ferm__enabled: '{{ True
-                   if (ansible_local is undefined or
-                        (ansible_local.cap12s|d() and ansible_local.cap12s.enabled|d() and
-                          (
-                            (ansible_local.cap12s.enabled | bool and "cap_net_admin" in ansible_local.cap12s.list) or
-                            not ansible_local.cap12s.enabled | bool
-                          )
-                        )
-                      )
+                   if (ansible_system_capabilities is undefined or
+                       (((ansible_system_capabilities_enforced|d())|bool and
+                         "cap_net_admin" in ansible_system_capabilities) or
+                        not (ansible_system_capabilities_enforced|d(True))|bool))
                    else False }}'
 
                                                                    # ]]]
@@ -456,7 +452,7 @@ ferm__default_rules:
     type: 'hashlimit'
     weight_class: 'filter-icmp'
     protocol: 'icmp'
-    enabled: '{{ ferm__filter_icmp | bool }}'
+    rule_state: '{{ "present" if (ferm__filter_icmp | bool) else "absent" }}'
     hashlimit: '{{ ferm__filter_icmp_limit }}'
     hashlimit_burst: '{{ ferm__filter_icmp_burst }}'
     hashlimit_expire: '{{ ferm__filter_icmp_expire }}'

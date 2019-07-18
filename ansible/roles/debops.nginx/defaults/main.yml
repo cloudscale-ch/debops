@@ -7,7 +7,7 @@
 # .. contents:: Sections
 #    :local:
 #
-# .. include:: ../../../includes/global.rst
+# .. include:: ../../../../includes/global.rst
 
 
 # .. envvar:: nginx_allow [[[
@@ -50,13 +50,22 @@ nginx__deploy_state: 'present'
 # .. envvar:: nginx_base_packages [[[
 #
 # List of Debian packages installed by this role
-nginx_base_packages: [ 'python-passlib' ]
+nginx_base_packages: []
 
                                                                    # ]]]
 # .. envvar:: nginx_flavor [[[
 #
 # What type of nginx server to install (see 'nginx_flavor_package_map')
 nginx_flavor: 'full'
+
+                                                                   # ]]]
+# .. envvar:: nginx__flavor_distribution_release [[[
+#
+# Specify the OS distribution release to use in falvored repositories.
+nginx__flavor_distribution_release: '{{ ansible_local.core.distribution_release
+                                        if (ansible_local|d() and ansible_local.core|d() and
+                                            ansible_local.core.distribution_release|d())
+                                        else ansible_distribution_release }}'
 
                                                                    # ]]]
 # .. envvar:: nginx__flavor_apt_key_id [[[
@@ -79,8 +88,8 @@ nginx__flavor_apt_key_id_map:
 # .. envvar:: nginx__flavor_apt_repository_map [[[
 #
 nginx__flavor_apt_repository_map:
-  'nginx.org': 'deb https://nginx.org/packages/{{ ansible_distribution | lower }}/ {{ ansible_distribution_release }} nginx'
-  'passenger': 'deb https://oss-binaries.phusionpassenger.com/apt/passenger {{ ansible_distribution_release }} main'
+  'nginx.org': 'deb https://nginx.org/packages/{{ ansible_distribution | lower }}/ {{ nginx__flavor_distribution_release }} nginx'
+  'passenger': 'deb https://oss-binaries.phusionpassenger.com/apt/passenger {{ nginx__flavor_distribution_release }} main'
 
                                                                    # ]]]
 # .. envvar:: nginx__flavor_packages [[[
@@ -107,7 +116,7 @@ nginx_flavor_package_map:
     - 'nginx-extras'
     - 'ruby'
     - '{{ "passenger"
-          if (ansible_distribution_release in
+          if (nginx__flavor_distribution_release in
               [ "wheezy", "jessie", "precise", "trusty", "xenial" ])
           else "libnginx-mod-http-passenger" }}'
 
@@ -234,6 +243,31 @@ nginx__http_auth_htpasswd:
   users: '{{ nginx_http_auth_users }}'
 
                                                                    # ]]]
+# .. envvar:: nginx_http_server_names_hash_bucket_size [[[
+#
+# The default value of 'server_names_hash_bucket_size' depends on the size
+# of the processor’s cache line. If a large number of server names are
+# defined, or unusually long server names are defined,
+# tuning the 'server_names_hash_max_size' and
+# 'server_names_hash_bucket_size' directives at the http level may
+# become necessary.
+# More information can be found at:
+#
+# - http://nginx.org/en/docs/http/ngx_http_core_module.html#server_names_hash_bucket_size
+#
+nginx_http_server_names_hash_bucket_size: 64
+
+                                                                   # ]]]
+# .. envvar:: nginx_http_server_names_hash_max_size [[[
+#
+# Sets the maximum size of the server names hash tables.
+# More information can be found at:
+#
+# - http://nginx.org/en/docs/http/ngx_http_core_module.html#server_names_hash_max_size
+#
+nginx_http_server_names_hash_max_size: 512
+
+                                                                   # ]]]
 # .. envvar:: nginx_http_options [[[
 #
 # Default http { } options.
@@ -358,6 +392,15 @@ nginx_real_ip_recursive: False
 nginx_default_keepalive_timeout: 60
 
                                                                    # ]]]
+
+# .. envvar:: nginx_multi_accept [[[
+#
+# If enabled a worker proccess will accept all new connections at a time,
+# instead of a new connection at a time.
+nginx_multi_accept: 'off'
+
+                                                                   # ]]]
+
 # .. envvar:: nginx_pki [[[
 #
 # Enable or disable support for PKI/SSL/TLS in nginx.
@@ -545,6 +588,23 @@ nginx_hsts_subdomains: True
 nginx_hsts_preload: False
 
                                                                    # ]]]
+# .. envvar:: nginx_enable_http2 [[[
+#
+# Enable HTTP/2 (formerly HTTP QUICK) on nginx.
+# HTTP/2 enables a server to pre‑emptively push resources to a remote client,
+# anticipating that the client may soon request those resource, hence
+# reducing the number of RTTs (Round Trip Times).
+# Available with nginx version >= 1.9.5
+nginx_enable_http2: True
+
+                                                                   # ]]]
+# .. envvar:: nginx_enable_sdpy [[[
+#
+# Enables experimental support for .. _SPDY: https://www.chromium.org/spdy/spdy-protocol HTTP protocol.
+# Available with nginx version >= 1.4 && < 1.9.5
+nginx_enable_sdpy: False
+
+                                                                   # ]]]
 # .. envvar:: nginx__http_csp_append [[[
 #
 # CSP directives to append to all policies. This can be used to set the
@@ -637,6 +697,17 @@ nginx_acme_server: False
 # server needs to be configured to answer the queries.
 # Set to ``False`` to disable the redirect.
 nginx_acme_domain: 'acme.{{ ansible_domain }}'
+
+                                                                   # ]]]
+# .. envvar:: nginx__hostname_domains [[[
+#
+# Specify the domains which will be used as a base domains for automatic short
+# name generation. It will not be used if it's defined on the server level.
+# First domain from the list that matches, wins.
+nginx__hostname_domains: [ '{{ ansible_local.core.domain
+                               if (ansible_local|d() and ansible_local.core|d() and
+                                   ansible_local.core.domain|d())
+                               else (ansible_domain if ansible_domain else ansible_hostname) }}' ]
 
                                                                    # ]]]
 # .. envvar:: nginx_status [[[
@@ -780,6 +851,12 @@ nginx__maps: []
 #
 # List of default nginx map definitions
 nginx__default_maps:
+
+  # Extract the subdomain from the '*.local' domain managed by Avahi and expose
+  # it as a variable which can be used to redirect the HTTP clients to websites
+  - name: 'host_without_local'
+    map: '$host $host_without_local'
+    mapping: '~*^(?<subdomain>[a-zA-Z0-9\-\_\.]+)\.local$ $subdomain;'
 
   # Support WebSocket connection upgrade as a proxy
   # Documentation: https://nginx.org/en/docs/http/websocket.html
@@ -1076,8 +1153,45 @@ nginx_ssl_ciphers:
   # https://community.qualys.com/thread/12182
   fips: 'FIPS@STRENGTH:!aNULL:!eNULL'
 
+  # NCSC-NL 'good' cipher suite from IT Security Guidelines for Transport Layer Security v2.0
+  # https://www.ncsc.nl/english/current-topics/factsheets/it-security-guidelines-for-transport-layer-security-tls.html
+  ncsc_nl: 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-RSA-AES128-GCM-SHA256'
+
   # This cipher set disables the 'ssl_ciphers' option in 'nginx' and the
   # default set of SSL ciphers for a given platform will be used.
   default: ''
+                                                                   # ]]]
+                                                                   # ]]]
+# Configuration for other Ansible roles [[[
+# ----------------------------------------
+
+# .. envvar:: nginx__keyring__dependent_apt_keys [[[
+#
+# Configuration for the :ref:`debops.nginx` Ansible role.
+nginx__keyring__dependent_apt_keys:
+
+  - id: '{{ nginx__flavor_apt_key_id }}'
+    repo: '{{ nginx__flavor_apt_repository }}'
+    state: '{{ "present"
+               if (nginx_flavor in [ "nginx.org", "passenger" ] and
+                   nginx__deploy_state == "present")
+               else "absent" }}'
+
+                                                                   # ]]]
+# .. envvar:: nginx__python__dependent_packages3 [[[
+#
+# Configuration for the :ref:`debops.python` Ansible role.
+nginx__python__dependent_packages3:
+
+  - 'python3-passlib'
+
+                                                                   # ]]]
+# .. envvar:: nginx__python__dependent_packages2 [[[
+#
+# Configuration for the :ref:`debops.python` Ansible role.
+nginx__python__dependent_packages2:
+
+  - 'python-passlib'
+
                                                                    # ]]]
                                                                    # ]]]

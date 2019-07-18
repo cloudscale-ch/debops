@@ -20,7 +20,7 @@ for development and pull requests.
 
 .. __: https://github.com/debops/debops/
 .. __: https://gitlab.com/debops/debops/
-.. __: https://about.gitlab.com/features/gitlab-ci-cd/
+.. __: https://about.gitlab.com/product/continuous-integration/
 .. __: https://github.com/debops/debops/network/members
 
 
@@ -42,5 +42,5 @@ Mailman. The list has low traffic and is used for notifications about
 significant changes in the project, and more asynchronous communication. You
 can also check out the `mailing list archives`__.
 
-.. __: https://lists.debops.org/mailman/listinfo/debops-users
+.. __: https://lists.debops.org/mailman/listinfo/
 .. __: https://lists.debops.org/pipermail/debops-users/
