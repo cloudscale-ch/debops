@@ -70,6 +70,20 @@ Added
   keys of the current user in LDAP if support for it is enabled on the LXC
   host.
 
+- [debops.unbound] The :command:`unbound` service will be configured to forward
+  ``*.lxc.{{ ansible_domain }}`` DNS queries to the :command:`dnsmasq` service
+  managed by the :ref:`debops.lxc` role (``lxc-net``), if LXC configuration is
+  detected via local Ansible facts. The ``*.consul`` DNS queries will be
+  forwarded to the :command:`consul` service, if its Ansible facts are
+  detected.
+
+- [debops.nginx] If a :command:`nginx` server configuration uses a domain with
+  ``lxc.`` prefix, for example inside of an internal LXC container, the role
+  will include a redirect from ``host.lxc`` "virtual" domain to the real
+  ``host.lxc.example.org`` domain. This ensures that HTTP requests to the
+  ``http://host.lxc/`` URLs are redirected to the real LXC container hosts,
+  depending on the DNS records and the HTTP client's resolver configuration.
+
 Changed
 ~~~~~~~
 
@@ -206,6 +220,15 @@ Changed
   with the ``root`` access to the database.
 
   .. __: https://github.com/ansible/ansible/issues/26581
+
+- [debops.unbound] The role will enable remote control management of the
+  :command:`unbound` daemon via the ``loopback`` network interface using the
+  :command:`unbound-control` command.
+
+- [ci] The Travis-CI tests will be done using Python 3.7 only. Python 2.7
+  support `will be dropped in 2020`__, it's time to prepare.
+
+  .. __: https://pythonclock.org/
 
 Removed
 ~~~~~~~
