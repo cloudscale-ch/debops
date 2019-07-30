@@ -15,13 +15,13 @@
 
 # Configuration variables:
 #
-#     VAGRANT_BOX="debian/stretch64"
+#     VAGRANT_BOX="debian/buster64"
 #         Specify the box to use for controller.
 #
-#     VAGRANT_NODE_BOX="debian/stretch64"
+#     VAGRANT_NODE_BOX="debian/buster64"
 #         Specify the box to use for nodes.
 #
-#     VAGRANT_HOSTNAME="stretch"
+#     VAGRANT_HOSTNAME="buster"
 #         Set a custom hostname after the box boots up.
 #
 #     CONTROLLER=false
@@ -91,7 +91,7 @@ if grep "127.0.0.1" /etc/hosts | grep "${current_fqdn}" > /dev/null ; then
     printf "Updating the box IP address to '%s' in /etc/hosts...\n" "${current_default_ip}"
     sed -i -e "/^127\.0\.0\.1.*$(hostname -f | sed -e 's/\./\\\./g')/d" /etc/hosts
 
-    # The upstream Vagrant box image contains 'stretch' as an alias of
+    # The upstream Vagrant box image contains 'buster' as an alias of
     # 'localhost', let's remove it to avoid potential issues.
     sed -i -r -e 's/^127\.0\.0\.1\\s+localhost.*$/127.0.0.1\\tlocalhost/' /etc/hosts
 
@@ -327,16 +327,27 @@ fi
 if ! type ansible > /dev/null 2>&1 ; then
     jane notify warning "Ansible not found"
 
+    os_release="$(grep -E '^VERSION=' /etc/os-release | tr -d '(")' | cut -d' ' -f2 | tr -d '\n')"
+
     tee "/etc/apt/sources.list" > "/dev/null" <<EOF
-deb http://deb.debian.org/debian stretch main
-deb http://deb.debian.org/debian stretch-updates main
-deb http://deb.debian.org/debian stretch-backports main
-deb http://security.debian.org/ stretch/updates main
+deb http://deb.debian.org/debian ${os_release} main
+deb http://deb.debian.org/debian ${os_release}-updates main
+deb http://deb.debian.org/debian ${os_release}-backports main
 EOF
+
+    if [ "${os_release}" == "wheezy" ] || [ "${os_release}" == "jessie" ] || [ "${os_release}" == "stretch" ] || [ "${os_release}" == "buster" ] ; then
+        tee -a "/etc/apt/sources.list" > "/dev/null" <<EOF
+deb http://security.debian.org/ ${os_release}/updates main
+EOF
+    else
+        tee -a "/etc/apt/sources.list" > "/dev/null" <<EOF
+deb http://security.debian.org/ ${os_release}-security main
+EOF
+    fi
 
     tee "/etc/apt/preferences.d/provision_ansible.pref" > "/dev/null" <<EOF
 Package: ansible
-Pin: release a=stretch-backports
+Pin: release a=${os_release}-backports
 Pin-Priority: 500
 EOF
 
@@ -379,11 +390,36 @@ EOF
         python-yaml \
         python3 \
         python3-apt \
+        python3-dnspython \
+        python3-future \
+        python3-jinja2 \
+        python3-nose2 \
+        python3-nose2-cov \
+        python3-openssl \
+        python3-passlib \
         python3-pip \
+        python3-pycodestyle \
+        python3-pytest \
+        python3-pytest-cov \
         python3-setuptools \
+        python3-sphinx \
+        python3-sphinx-rtd-theme \
+        python3-unittest2 \
+        python3-wheel \
+        python3-yaml \
         rsync \
         shellcheck \
-        yamllint ${ansible_from_debian}
+        yamllint
+
+    if [ ! "${os_release}" == "wheezy" ] && [ ! "${os_release}" == "jessie" ] && [ ! "${os_release}" == "stretch" ] ; then
+
+        DEBIAN_FRONTEND=noninteractive apt-get -y \
+        --no-install-recommends install \
+            python3-ldap
+        fi
+
+    DEBIAN_FRONTEND=noninteractive apt-get -y \
+    --no-install-recommends install ${ansible_from_debian}
 
     jane notify cache "Cleaning up cache directories..."
     find /var/lib/apt/lists -maxdepth 1 -type f ! -name 'lock' -delete
@@ -658,7 +694,7 @@ else
     VAGRANT_NODES = ENV['VAGRANT_NODES'] || 0
 end
 IO.write( VAGRANT_NODE_NUMBER, VAGRANT_NODES )
-VAGRANT_NODE_BOX = ENV['VAGRANT_NODE_BOX'] || 'debian/stretch64'
+VAGRANT_NODE_BOX = ENV['VAGRANT_NODE_BOX'] || 'debian/buster64'
 
 # Vagrant removed the atlas.hashicorp.com to vagrantcloud.com
 # redirect. The value of DEFAULT_SERVER_URL in Vagrant versions
@@ -689,7 +725,7 @@ Vagrant.configure("2") do |config|
                 # Don't populate '/vagrant' directory on other nodes
                 node.vm.synced_folder ".", "/vagrant", disabled: true
 
-                if ENV['VAGRANT_BOX'] || 'debian/stretch64' == 'debian/stretch64'
+                if ENV['VAGRANT_BOX'] || 'debian/buster64' == 'debian/buster64'
                     node.ssh.insert_key = false
                 end
 
@@ -711,7 +747,7 @@ Vagrant.configure("2") do |config|
     end
 
     config.vm.define "master", primary: true do |subconfig|
-        subconfig.vm.box = ENV['VAGRANT_BOX'] || 'debian/stretch64'
+        subconfig.vm.box = ENV['VAGRANT_BOX'] || 'debian/buster64'
         subconfig.vm.hostname = master_fqdn
 
         subconfig.vm.provision "shell", inline: $setup_eatmydata,  keep_color: true
@@ -729,7 +765,7 @@ Vagrant.configure("2") do |config|
             SHELL
         end
 
-        if ENV['VAGRANT_BOX'] || 'debian/stretch64' == 'debian/stretch64'
+        if ENV['VAGRANT_BOX'] || 'debian/buster64' == 'debian/buster64'
             subconfig.ssh.insert_key = false
         end
 

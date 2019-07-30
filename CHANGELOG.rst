@@ -129,6 +129,9 @@ Changed
   preparation of adding a role that will provide client functionality like
   network and container management.
 
+- [debops.docker_server] The Docker server no longer listens on a TCP port by
+  default, even if :ref:`debops.pki` is enabled.
+
 - [debops.netbase] Do not try to manage the hostname in LXC, Docker or OpenVZ
   containers by default. We assume that these containers are unprivileged and
   their hostname cannot be changed from the inside of the container.
@@ -230,6 +233,30 @@ Changed
 
   .. __: https://pythonclock.org/
 
+- [ci] The GitLab CI tests are done using a ``debian/buster64`` Vagrant Box.
+
+- [debops.netbase] If a host does not have a proper domain, either defined
+  locally or set via the DNS, don't generate a faux "domain" based on its
+  hostname and assume that this is a standalone host. This might affect
+  availability of some services, for example X.509 certificates managed by
+  :ref:`debops.pki` or reachability of websites created on that host. In this
+  case the host cannot have a FQDN defined in the Ansible inventory as the
+  label or ``ansible_host`` variable, only a hostname.
+
+- [debops.netbase] Role will check if the configured FQDN of a host exists in
+  the DNS database. If it does, the entry in the :file:`/etc/hosts` file will
+  be removed to allow the DNS to take over. If it doesn't, the configuration
+  will be left intact with assumtion that the domain is configured locally.
+
+- [debops.nginx] The role will no longer default to limiting the allowed HTTP
+  request methods to GET, HEAD and POST on PHP-enabled websites.
+
+- [debops.pki] If there is no domain set on the remote host, don't fallback to
+  the hostname in the :envvar:`pki_ca_domain` variable because the generated CA
+  certificates don't make any sense. With this setup the :ref:`debops.pki` role
+  requires to be run against a host with a valid DNS domain for the internal CA
+  to be created.
+
 Removed
 ~~~~~~~
 
@@ -256,6 +283,13 @@ Fixed
 - [debops.python] The role should now correctly detect Python 3.x interpreter
   on the Ansible Controller and disable usage of Python 2.7 on the managed
   hosts.
+
+- [debops.apache] Refactor the role to not use Jinja 'import' statements in
+  looped tasks - this does not work on newer Jinja versions.
+
+- [debops.nsswitch] Don't restart the :command:`systemd-logind` service on
+  :file:`/etc/nsswitch.conf` file changes if DebOps is running against
+  ``localhost``, to avoid breaking the existing user session.
 
 
 `debops v1.0.0`_ - 2019-05-22

@@ -326,6 +326,7 @@ stages:
 'dnsmasq role':
   <<: *test_role_2nd_deps
   variables:
+    BASE_VAGRANT_BOX: 'debian/stretch64'
     JANE_TEST_PLAY: '${DEBOPS_PLAYBOOKS}/service/ifupdown.yml ${DEBOPS_PLAYBOOKS}/service/dnsmasq.yml'
     JANE_INVENTORY_DIRS: 'common dnsmasq'
     JANE_INVENTORY_GROUPS: 'debops_service_ifupdown,debops_service_dnsmasq'
@@ -336,6 +337,7 @@ stages:
 'dnsmasq/persistent_paths role':
   <<: *test_role_2nd_deps
   variables:
+    BASE_VAGRANT_BOX: 'debian/stretch64'
     JANE_TEST_PLAY: '${DEBOPS_PLAYBOOKS}/service/ifupdown.yml ${DEBOPS_PLAYBOOKS}/service/dnsmasq-persistent_paths.yml'
     JANE_INVENTORY_DIRS: 'common dnsmasq'
     JANE_INVENTORY_GROUPS: 'debops_service_ifupdown,debops_service_dnsmasq_persistent_paths'
@@ -635,6 +637,7 @@ stages:
 'ifupdown role':
   <<: *test_role_1st_deps
   variables:
+    BASE_VAGRANT_BOX: 'debian/stretch64'
     JANE_TEST_PLAY: '${DEBOPS_PLAYBOOKS}/service/ifupdown.yml'
     JANE_INVENTORY_GROUPS: 'debops_service_ifupdown'
     JANE_DIFF_PATTERN: '.*/debops.ifupdown/.*'
@@ -866,7 +869,7 @@ stages:
 # --- n --- [[[2
 
 'netbase role':
-  <<: *test_role_no_deps
+  <<: *test_role_1st_deps
   variables:
     JANE_TEST_PLAY: '${DEBOPS_PLAYBOOKS}/service/netbase.yml'
     JANE_INVENTORY_GROUPS: 'debops_service_netbase'
@@ -917,6 +920,7 @@ stages:
 'nginx/passenger role':
   <<: *test_role_2nd_deps
   variables:
+    BASE_VAGRANT_BOX: 'debian/stretch64'
     JANE_TEST_PLAY: '${DEBOPS_PLAYBOOKS}/service/nginx.yml'
     JANE_INVENTORY_GROUPS: 'debops_service_nginx'
     JANE_INVENTORY_HOSTVARS: 'nginx_flavor=passenger'
@@ -1131,7 +1135,9 @@ stages:
   <<: *test_role_no_deps
   variables:
     JANE_TEST_PLAY: '${DEBOPS_PLAYBOOKS}/service/python_raw.yml'
-    #JANE_INVENTORY_HOSTVARS: 'ansible_python_interpreter=/usr/bin/python3'
+    # Ansible from upstream requires Python 2 environment, so don't wipe it,
+    # otherwise this particular test fails.
+    JANE_INVENTORY_HOSTVARS: 'python__v2=true'
     JANE_INVENTORY_GROUPS: 'debops_service_python'
     JANE_DIFF_PATTERN: '.*/debops.python/.*'
     JANE_LOG_PATTERN: '\[debops\.python\]'
@@ -1158,6 +1164,7 @@ stages:
 'radvd role':
   <<: *test_role_2nd_deps
   variables:
+    BASE_VAGRANT_BOX: 'debian/stretch64'
     JANE_TEST_PLAY: '${DEBOPS_PLAYBOOKS}/service/ifupdown.yml ${DEBOPS_PLAYBOOKS}/service/radvd.yml'
     JANE_INVENTORY_DIRS: 'common radvd'
     JANE_INVENTORY_GROUPS: 'debops_service_ifupdown,debops_service_radvd'
@@ -1433,6 +1440,7 @@ stages:
 'tinc/gateway role':
   <<: *test_role_3rd_deps
   variables:
+    BASE_VAGRANT_BOX: 'debian/stretch64'
     JANE_TEST_PLAY: '${DEBOPS_PLAYBOOKS}/service/ifupdown.yml ${DEBOPS_PLAYBOOKS}/service/tinc.yml'
     JANE_INVENTORY_DIRS: 'common tinc/gateway'
     JANE_INVENTORY_GROUPS: 'debops_service_ifupdown,debops_service_tinc'

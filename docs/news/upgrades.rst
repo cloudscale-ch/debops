@@ -67,6 +67,12 @@ Inventory variable changes
   inventory group ``[debops_service_docker_server]`` to continue using this
   role.
 
+  Also, the Docker server no longer listens on a TCP port by default, even if
+  :ref:`debops.pki` is enabled. You must set ``docker_server__tcp`` to ``True``
+  and configure an IP address whitelist in ``docker_server__tcp_allow`` if you
+  want to connect to the Docker server over a network. It is recommended to use
+  :ref:`debops.pki` to secure the connection with TLS.
+
 - The :ref:`debops.lxc` role uses different names of the container
   configuration options depending on the LXC version used on the host. The
   ``name`` parameters used in the configuration might change unexpectedly
@@ -84,6 +90,11 @@ Inventory variable changes
 
 - The ``core__keyserver`` variable and its corresponding local fact have been
   replaced by the :envvar:`keyring__keyserver` with a corresponding local fact.
+
+- The :ref:`debops.nginx` role no longer defaults to limiting the allowed HTTP
+  request methods to GET, HEAD and POST on PHP-enabled websites. Use the
+  ``item.php_limit_except`` parameter if you want to keep limiting the request
+  methods.
 
 
 v1.0.0 (2019-05-22)
