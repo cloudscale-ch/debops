@@ -76,7 +76,7 @@
   when: repo.state | d('present') not in ['absent', 'ignore'] and 'uploaders' in repo.keys()
 
 - name: Initialize reprepro repositories
-  ansible.builtin.command: 'reprepro export'
+  ansible.builtin.command: 'reprepro --ignore=undefinedtarget export'
   args:
     chdir: '{{ reprepro__data_root + "/" + repo.name }}'
   become: True
@@ -87,7 +87,7 @@
          (reprepro__register_config is changed or reprepro__register_uploaders is changed))
 
 - name: Generate symlinks
-  ansible.builtin.command: 'reprepro --delete createsymlinks'
+  ansible.builtin.command: 'reprepro --ignore=undefinedtarget --delete createsymlinks'
   args:
     chdir: '{{ reprepro__data_root + "/" + repo.name }}'
   become: True
