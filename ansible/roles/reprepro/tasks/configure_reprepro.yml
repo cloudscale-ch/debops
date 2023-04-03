@@ -76,7 +76,7 @@
   when: repo.state|d('present') not in [ 'absent', 'ignore' ] and 'uploaders' in repo.keys()
 
 - name: Initialize reprepro repositories
-  command: 'reprepro --ignore=undefinedtarget export'
+  command: 'reprepro --ignore=undefinedtarget --ignore=undefinedtracking export'
   args:
     chdir: '{{ reprepro__data_root + "/" + repo.name }}'
   become: True
@@ -85,7 +85,7 @@
          (reprepro__register_config is changed or reprepro__register_uploaders is changed))
 
 - name: Generate symlinks
-  command: 'reprepro --ignore=undefinedtarget --delete createsymlinks'
+  command: 'reprepro --ignore=undefinedtarget --ignore=undefinedtracking --delete createsymlinks'
   args:
     chdir: '{{ reprepro__data_root + "/" + repo.name }}'
   become: True
