@@ -1,3 +1,9 @@
+# SPDX-License-Identifier: GPL-2+
+#
+# Copied from Debian package: fusiondirectory-plugin-sudo-schema
+# Also available from: https://github.com/fusiondirectory/fusiondirectory-plugins/blob/fusiondirectory-1.0.19-security-debian/sudo/contrib/openldap/sudo.schema
+# With the license here: https://github.com/fusiondirectory/fusiondirectory/blob/fusiondirectory-1.0.19-security-debian/COPYING
+
 attributetype ( 1.3.6.1.4.1.15953.9.1.1
     NAME 'sudoUser'
     DESC 'User(s) who may  run sudo'

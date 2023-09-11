@@ -1,3 +1,11 @@
+# SPDX-License-Identifier: GPL-2+
+#
+# Copied from Debian package: fusiondirectory-schema
+# Also available from: https://github.com/fusiondirectory/fusiondirectory/blob/fusiondirectory-1.0.19-security-debian/contrib/openldap/rfc2307bis.schema
+# With the license here: https://github.com/fusiondirectory/fusiondirectory/blob/fusiondirectory-1.0.19-security-debian/COPYING
+# Automatically converted from the .schema file
+
+
 dn: cn=rfc2307bis,cn=schema,cn=config
 objectClass: olcSchemaConfig
 cn: rfc2307bis
