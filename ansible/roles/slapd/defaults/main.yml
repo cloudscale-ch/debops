@@ -1107,6 +1107,12 @@ slapd__structure_tasks:
       memberOf: '{{ (["cn=Hidden Objects", "ou=Groups"] + slapd__base_dn) | join(",") }}'
       description: 'LDAP objects which are accessible only by privileged accounts'
 
+  - name: 'Add cn=Hidden Objects group to itself'
+    dn: '{{ ["cn=Hidden Objects", "ou=Groups"] + slapd__base_dn }}'
+    attributes:
+      member:
+        - '{{ (["cn=Hidden Objects", "ou=Groups"] + slapd__base_dn) | join(",") }}'
+
   - name: 'Create cn=UNIX SSH users group'
     dn: '{{ ["cn=UNIX SSH users", "ou=Groups"] + slapd__base_dn }}'
     objectClass: [ 'groupOfEntries', 'posixGroup', 'posixGroupId',
