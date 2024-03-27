@@ -511,6 +511,24 @@ netbox__ldap_object_ownerdn: '{{ ([ netbox__ldap_object_owner_rdn, netbox__ldap_
                                     + netbox__ldap_base_dn) | join(",") }}'
                                                                    # ]]]
                                                                    # ]]]
+# .. envvar:: netbox__ldap_attr_firstname [[[
+#
+# The attribute of the LDAP object that shows the users first name.
+netbox__ldap_attr_firstname: 'cn'
+
+                                                                   # ]]]
+# .. envvar:: netbox__ldap_attr_sn [[[
+#
+# The attribute of the LDAP object that shows the users last name.
+netbox__ldap_attr_sn: 'sn'
+
+                                                                   # ]]]
+# .. envvar:: netbox__ldap_attr_mail [[[
+#
+# The attribute of the LDAP object that shows the users email address.
+netbox__ldap_attr_mail: 'mailAddress'
+
+                                                                   # ]]]
 # LDAP connection options [[[
 # ---------------------------
 
