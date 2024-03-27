@@ -56,9 +56,10 @@
     manage_dir:  '{{ item.manage_dir }}'
     state:       '{{ item.state | d("present") }}'
     key_options: '{{ item.key_options | d(omit) }}'
-    comment:     '{{ item.comment | d(omit) }}'
-    path:        '{{ item.path | d(omit) }}'
-    exclusive:   '{{ item.exclusive | d(omit) }}'
+    comment:     '{{ item.comment     | d(omit) }}'
+    path:        '{{ item.path        | d(omit) }}'
+    exclusive:   '{{ item.exclusive   | d(omit) }}'
+    follow:      '{{ item.follow | d(omit) }}'
   loop: '{{ lookup("template", "lookup/authorized_keys__identities.j2") | from_yaml }}'
   loop_control:
     label: '{{ {"identity": item.identity,
