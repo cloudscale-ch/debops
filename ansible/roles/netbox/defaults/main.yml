@@ -510,7 +510,15 @@ netbox__ldap_object_owner_rdn: 'uid={{ lookup("env", "USER") }}'
 netbox__ldap_object_ownerdn: '{{ ([ netbox__ldap_object_owner_rdn, netbox__ldap_people_rdn ]
                                     + netbox__ldap_base_dn) | join(",") }}'
                                                                    # ]]]
+
+# .. envvar:: netbox__ldap_always_update_user [[[
+#
+# Always update users in database upon login.
+# Needs False for secondary nodes with read-only Databse.
+netbox__ldap_always_update_user: True
                                                                    # ]]]
+                                                                   # ]]]
+
 # LDAP connection options [[[
 # ---------------------------
 
