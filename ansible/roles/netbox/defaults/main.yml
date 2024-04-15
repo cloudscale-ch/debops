@@ -514,7 +514,7 @@ netbox__ldap_object_ownerdn: '{{ ([ netbox__ldap_object_owner_rdn, netbox__ldap_
 # .. envvar:: netbox__ldap_always_update_user [[[
 #
 # Always update users in database upon login.
-# Needs False for secondary nodes with read-only Databse.
+# Needs False for secondary nodes with read-only Database.
 netbox__ldap_always_update_user: True
                                                                    # ]]]
                                                                    # ]]]
