@@ -88,3 +88,6 @@ AUTH_LDAP_USER_ATTR_MAP = {
     "last_name": environ.get('AUTH_LDAP_ATTR_LASTNAME', 'sn'),
     "email": environ.get('AUTH_LDAP_ATTR_MAIL', 'mailAddress')
 }
+
+# Set to False to allow LDAP logins on secondary (read-only DB) instances
+AUTH_LDAP_ALWAYS_UPDATE_USER = {{ netbox__ldap_always_update_user }}
