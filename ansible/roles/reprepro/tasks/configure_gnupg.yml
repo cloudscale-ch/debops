@@ -71,13 +71,16 @@
     group: '{{ reprepro__group }}'
     mode: '0600'
   register: reprepro__register_gpg_archive
+  when: reprepro__gpg_snapshot_keep
 
 - name: Upload ~/.gnupg archive to Ansible Controller
   ansible.builtin.fetch:  # noqa no-handler
     src: '{{ reprepro__home + "/" + reprepro__gpg_snapshot_name }}'
     dest: '{{ reprepro__gpg_snapshot_path + "/" + reprepro__gpg_snapshot_name }}'
     flat: True
-  when: reprepro__register_gpg_archive is changed
+  when:
+    - reprepro__gpg_snapshot_keep
+    - reprepro__register_gpg_archive is changed
 
 - name: Remove old automatic signing key
   ansible.builtin.file:  # noqa no-handler
