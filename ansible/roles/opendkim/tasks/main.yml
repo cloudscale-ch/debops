@@ -108,6 +108,7 @@
   become: False
   delegate_to: 'localhost'
   run_once: True
+  when: opendkim__manage_keys | default(True)
 
 - name: Generate DomainKeys on Ansible Controller
   community.crypto.openssl_privatekey:
@@ -123,6 +124,7 @@
   become: False
   delegate_to: 'localhost'
   no_log: '{{ debops__no_log | d(True) }}'
+  when: opendkim__manage_keys | default(True)
 
 - name: Remove DomainKeys from hosts when requested
   ansible.builtin.file:
@@ -131,7 +133,9 @@
               + (item.selector | d(item.name | d(item))) + ".pem" }}'
     state: 'absent'
   loop: '{{ q("flattened", opendkim__combined_keys) }}'
-  when: item.state | d('present') == 'absent'
+  when:
+    - item.state | d('present') == 'absent'
+    - opendkim__manage_keys | default(True)
 
 - name: Download DomainKeys from Ansible Controller
   ansible.builtin.copy:
@@ -145,7 +149,9 @@
     group: '{{ opendkim__group }}'
     mode: '0640'
   loop: '{{ q("flattened", opendkim__combined_keys) }}'
-  when: item.state | d('present') != 'absent'
+  when:
+    - item.state | d('present') != 'absent'
+    - opendkim__manage_keys | default(True)
   no_log: '{{ debops__no_log | d(True) }}'
 
 - name: Generate key configuration files

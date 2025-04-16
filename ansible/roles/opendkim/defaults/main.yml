@@ -154,6 +154,13 @@ opendkim__combined_keys: '{{ opendkim__default_keys
                              + opendkim__group_keys
                              + opendkim__host_keys }}'
                                                                    # ]]]
+# .. envvar:: opendkim__manage_keys [[[
+#
+# True if opendkim should generate and place the domainkey files. This option
+# is useful if the domainkey files are managed by another role.
+opendkim__manage_keys: True
+
+                                                                   # ]]]
                                                                    # ]]]
 # DKIM Signing Table [[[
 # ----------------------
